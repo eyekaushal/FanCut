@@ -50,14 +50,25 @@ CLUBS: tuple[ClubSpec, ...] = (
     ClubSpec("elmhurst", "Elmhurst Wanderers", "ELM", "#2F4F2F", 0.92, "Callum Brannagh"),
     ClubSpec("harbourside", "Harbourside Rangers", "HBR", "#0E7C86", 0.90, "Arjun Sandhu"),
     ClubSpec("fenwick", "Fenwick Forest", "FEN", "#6B3E26", 0.88, "Nico Castellan"),
+    ClubSpec("oakbridge", "Oakbridge Town", "OAK", "#7A1F2B", 1.18, "Pierre Delacroix"),
+    ClubSpec("thornwick", "Thornwick United", "THW", "#1D3557", 1.08, "Dev Kapoor"),
+    ClubSpec("copperhill", "Copperhill City", "CPH", "#B5651D", 1.06, "Yusuf Okafor"),
+    ClubSpec("bramblefield", "Bramblefield FC", "BRM", "#4A6741", 1.03, "Emre Kowal"),
+    ClubSpec("wyndmoor", "Wyndmoor Albion", "WYN", "#6D597A", 0.99, "Tunde Aldana"),
+    ClubSpec("saltmarsh", "Saltmarsh Town", "SLT", "#457B9D", 0.96, "Sami Rourke"),
+    ClubSpec("glenhallow", "Glenhallow Athletic", "GLH", "#2A9D8F", 0.93, "Bastien Quaye"),
+    ClubSpec("hawkridge", "Hawkridge Wanderers", "HWK", "#9C2C2C", 0.91, "Jonah Ibarra"),
+    ClubSpec("silverbeck", "Silverbeck Rovers", "SLV", "#8D99AE", 0.86, "Elias Strand"),
+    ClubSpec("lindenpark", "Linden Park", "LDP", "#556B2F", 0.84, "Felix Novak"),
 )
 
 
-def build_team(spec: ClubSpec) -> Team:
-    """Deterministic squad for a club: the same club always gets the same players."""
+def build_team(spec: ClubSpec, taken: set[str]) -> Team:
+    """Deterministic squad for a club. ``taken`` holds names already used league-wide,
+    so no two players anywhere share a name."""
     rng = random.Random(spec.id)
     positions = [pos for pos, count in _FORMATION for _ in range(count)] + list(_BENCH)
-    names = _unique_names(rng, len(positions), reserved=spec.star_name)
+    names = _unique_names(rng, len(positions), taken)
     # The star leads the line: first forward slot.
     star_index = positions.index(Position.FW)
     names[star_index] = spec.star_name
@@ -83,13 +94,19 @@ def build_team(spec: ClubSpec) -> Team:
     )
 
 
-def _unique_names(rng: random.Random, count: int, reserved: str) -> list[str]:
+def _unique_names(rng: random.Random, count: int, taken: set[str]) -> list[str]:
     names: list[str] = []
     while len(names) < count:
         name = f"{rng.choice(_FIRST_NAMES)} {rng.choice(_LAST_NAMES)}"
-        if name != reserved and name not in names:
+        if name not in taken:
+            taken.add(name)
             names.append(name)
     return names
 
 
-TEAMS: dict[str, Team] = {spec.id: build_team(spec) for spec in CLUBS}
+def _build_league_teams() -> dict[str, Team]:
+    taken = {spec.star_name for spec in CLUBS}  # stars are reserved for their own clubs
+    return {spec.id: build_team(spec, taken) for spec in CLUBS}
+
+
+TEAMS: dict[str, Team] = _build_league_teams()

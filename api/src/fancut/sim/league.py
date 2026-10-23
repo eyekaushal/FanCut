@@ -7,9 +7,9 @@ from fancut.sim.archetypes import SPECS
 from fancut.sim.clubs import TEAMS
 from fancut.sim.engine import MatchSimulator
 from fancut.sim.labels import label, summarize
-from fancut.sim.schema import Archetype, Match, MatchMeta, Team
+from fancut.sim.schema import Archetype, Match, MatchMeta, Stakes, Team
 
-MAX_ATTEMPTS = 500
+MAX_ATTEMPTS = 2000  # a 0-0 thriller occurs in ~1% of simulations
 FIRST_KICKOFF = datetime(2026, 10, 24, 19, 0, tzinfo=UTC)  # 00:30 IST: a real night match
 
 # 30 matches: enough variety to evaluate wake decisions on every kind of game.
@@ -35,11 +35,17 @@ def generate_match(
     archetype: Archetype,
     seed: int,
     kickoff_utc: datetime = FIRST_KICKOFF,
+    stakes: Stakes | None = None,
 ) -> Match:
-    """Simulate until the match genuinely exhibits ``archetype``; deterministic for a seed."""
+    """Simulate until the match genuinely exhibits ``archetype``; deterministic for a seed.
+
+    ``stakes`` comes from the league table when the match is part of a matchday;
+    otherwise one typical of the archetype is drawn.
+    """
     spec = SPECS[archetype]
     rng = random.Random(seed)
-    stakes = rng.choice(spec.stakes)
+    typical = rng.choice(spec.stakes)
+    stakes = stakes or typical
     for _ in range(MAX_ATTEMPTS):
         attempt_seed = rng.randrange(2**31)
         events = MatchSimulator(match_id, home, away, spec, attempt_seed).run()
