@@ -5,8 +5,11 @@ covers Foundry on Azure and Foundry Local alike; only the settings differ.
 """
 
 from agent_framework.openai import OpenAIChatCompletionClient
+from openai import AsyncOpenAI
 
 from fancut.config import Settings
+
+MAX_RETRIES = 6
 
 
 class LLMNotConfiguredError(RuntimeError):
@@ -23,8 +26,10 @@ def chat_client(settings: Settings) -> OpenAIChatCompletionClient:
     if not settings.llm_configured:
         raise LLMNotConfiguredError("Set NK_LLM_ENDPOINT, NK_LLM_API_KEY and NK_LLM_DEPLOYMENT")
     assert settings.llm_endpoint and settings.llm_api_key  # narrowed by llm_configured
-    return OpenAIChatCompletionClient(
-        model=settings.llm_deployment,
+    # Generous retries with backoff ride out short rate-limit bursts (HTTP 429).
+    connection = AsyncOpenAI(
         api_key=settings.llm_api_key.get_secret_value(),
         base_url=openai_v1_base_url(settings.llm_endpoint),
+        max_retries=MAX_RETRIES,
     )
+    return OpenAIChatCompletionClient(model=settings.llm_deployment, async_client=connection)
