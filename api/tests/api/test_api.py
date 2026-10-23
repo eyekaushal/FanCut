@@ -1,0 +1,126 @@
+import asyncio
+import json
+from typing import Any
+
+from fastapi.testclient import TestClient
+
+from fancut import __version__
+from fancut.api.mcp import build_mcp
+from fancut.api.services import Services
+from fancut.matchday.matchday import Matchday
+
+
+def _stream(client: TestClient, profile_id: str, until: int = 15) -> list[dict[str, Any]]:
+    channel = client.post(
+        "/channels", json={"profile_id": profile_id, "speed": 600, "until_minute": until}
+    ).json()
+    overlays = []
+    with client.stream("GET", channel["stream"]) as response:
+        assert response.headers["content-type"].startswith("text/event-stream")
+        for line in response.iter_lines():
+            if line.startswith("data:"):
+                overlays.append(json.loads(line.removeprefix("data:")))
+    return overlays
+
+
+def test_health_reports_version_and_no_model_in_tests(client: TestClient) -> None:
+    body = client.get("/health").json()
+    assert body == {"status": "ok", "version": __version__, "environment": "test", "model": False}
+
+
+def test_matchday_lists_ten_fixtures_and_the_full_table(client: TestClient) -> None:
+    body = client.get("/matchday").json()
+    assert len(body["fixtures"]) == 10
+    assert [row["position"] for row in body["table"]] == list(range(1, 21))
+
+
+def test_a_plain_language_profile_becomes_a_channel(client: TestClient) -> None:
+    compiled = client.post(
+        "/profiles/compile", json={"message": "Copperhill City fan, I follow Yusuf Okafor"}
+    ).json()
+    assert compiled["compiled"]["profile"]["club_id"] == "copperhill"
+    overlays = _stream(client, compiled["profile_id"], until=5)
+    assert overlays[0]["type"] == "cut"
+    assert "copperhill" in json.dumps(overlays[0]["data"]["facts"]).lower()
+
+
+def test_the_stream_follows_the_overlay_contract(client: TestClient) -> None:
+    overlays = _stream(client, "arjun")
+    assert all(o["schema_version"] == "overlay.v1" for o in overlays)
+    assert [o["seq"] for o in overlays] == list(range(1, len(overlays) + 1))
+    assert overlays[0]["type"] == "cut" and overlays[0]["data"]["kind"] == "open"
+    assert overlays[-1]["type"] == "end"
+
+
+def test_every_cut_is_narrated_and_actions_come_only_from_the_match_on_air(
+    client: TestClient,
+) -> None:
+    overlays = _stream(client, "arjun")
+    cuts = {o["data"]["decision_id"] for o in overlays if o["type"] == "cut"}
+    narrated = {o["data"]["decision_id"] for o in overlays if o["type"] == "narration"}
+    assert cuts and cuts == narrated
+
+    on_air = None
+    for overlay in overlays:
+        if overlay["type"] == "cut" and overlay["data"]["kind"] != "replay":
+            on_air = overlay["data"]["match_id"]
+        elif overlay["type"] == "action":
+            assert overlay["data"]["match_id"] == on_air
+
+
+def test_the_audit_trail_records_every_decision_with_its_evidence(client: TestClient) -> None:
+    channel = client.post(
+        "/channels", json={"profile_id": "maya", "speed": 600, "until_minute": 10}
+    ).json()
+    with client.stream("GET", channel["stream"]) as response:
+        for _ in response.iter_lines():
+            pass
+    audit = client.get(channel["audit"]).json()
+    assert audit
+    for entry in audit:
+        assert {"decision", "facts", "reference", "narration"} <= entry.keys()
+        assert entry["decision"]["chosen"]["match_id"] == entry["decision"]["match_id"]
+
+
+def test_unknown_profiles_and_channels_are_404s(client: TestClient) -> None:
+    assert client.post("/channels", json={"profile_id": "nobody"}).status_code == 404
+    assert client.get("/channels/nope/audit").status_code == 404
+
+
+def test_the_mcp_endpoint_completes_a_handshake(client: TestClient) -> None:
+    response = client.post(
+        "/mcp/",
+        headers={"Accept": "application/json, text/event-stream"},
+        json={
+            "jsonrpc": "2.0",
+            "id": 1,
+            "method": "initialize",
+            "params": {
+                "protocolVersion": "2025-06-18",
+                "capabilities": {},
+                "clientInfo": {"name": "test", "version": "1"},
+            },
+        },
+    )
+    assert response.status_code == 200
+    assert "fancut-drama" in response.text
+
+
+def test_mcp_tools_answer_about_the_matchday(matchday: Matchday) -> None:
+    server = build_mcp(Services(matchday=matchday, model=None))
+
+    async def call(name: str, arguments: dict[str, Any]) -> dict[str, Any]:
+        result = await server.call_tool(name, arguments)
+        return json.loads(result.content[0].text)  # type: ignore[union-attr]
+
+    overview = asyncio.run(call("matchday_overview", {}))
+    assert len(overview["fixtures"]) == 10
+    drama = asyncio.run(
+        call("match_drama", {"match_id": overview["fixtures"][0]["match_id"], "minute": 60})
+    )
+    assert 0 <= drama["suspense"] <= 1
+    assert abs(sum(drama["win_probability"].values()) - 1) < 1e-9
+    ranking = asyncio.run(call("rank_matches", {"fan": "arjun", "minute": 30}))
+    values = [r["value"] for r in ranking["ranking"]]
+    assert len(values) == 10 and values == sorted(values, reverse=True)
+    assert ranking["on_air"] in {f["match_id"] for f in overview["fixtures"]}

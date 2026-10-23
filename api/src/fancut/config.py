@@ -14,6 +14,9 @@ class Settings(BaseSettings):
     host: str = "127.0.0.1"
     port: int = 8000
     cors_origins: list[str] = ["http://localhost:3000"]
+    # Host headers the MCP endpoint accepts (DNS-rebinding protection stays on).
+    # Add the deployed hostname in Azure, e.g. NK_MCP_ALLOWED_HOSTS='["api.example.net"]'.
+    mcp_allowed_hosts: list[str] = ["localhost", "localhost:*", "127.0.0.1", "127.0.0.1:*"]
 
     # Microsoft Foundry model deployment (any OpenAI-compatible endpoint works).
     llm_endpoint: str | None = None
