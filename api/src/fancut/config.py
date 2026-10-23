@@ -20,6 +20,9 @@ class Settings(BaseSettings):
     llm_api_key: SecretStr | None = None
     llm_deployment: str | None = None
 
+    # Print agent traces to the console (Application Insights is configured in Azure).
+    trace_console: bool = False
+
     # Azure AI Speech (the Foundry resource's key and region also work here).
     speech_region: str | None = None
     speech_key: SecretStr | None = None
