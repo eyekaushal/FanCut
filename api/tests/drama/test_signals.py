@@ -1,5 +1,5 @@
-from nightkeeper.drama.signals import PlayWindow, threat
-from nightkeeper.sim.schema import Event, EventType, Side
+from fancut.drama.signals import PlayWindow, threat
+from fancut.sim.schema import Event, EventType, Side
 
 
 def _event(seq: int, t: float, type_: EventType, side: Side, **kw: object) -> Event:

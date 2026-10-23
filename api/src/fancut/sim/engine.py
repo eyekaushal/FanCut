@@ -11,8 +11,8 @@ import math
 import random
 from collections.abc import Mapping
 
-from nightkeeper.sim.archetypes import ArchetypeSpec
-from nightkeeper.sim.schema import (
+from fancut.sim.archetypes import ArchetypeSpec
+from fancut.sim.schema import (
     PITCH_LENGTH,
     PITCH_WIDTH,
     Event,
@@ -23,7 +23,7 @@ from nightkeeper.sim.schema import (
     Side,
     Team,
 )
-from nightkeeper.sim.state import GameState
+from fancut.sim.state import GameState
 
 HALF_SECONDS = 45 * 60.0
 CENTRE = (PITCH_LENGTH / 2, PITCH_WIDTH / 2)

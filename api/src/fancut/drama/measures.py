@@ -10,7 +10,7 @@
 
 import math
 
-from nightkeeper.drama.probability import Outcome, outcome_probabilities
+from fancut.drama.probability import Outcome, outcome_probabilities
 
 SUSPENSE_HORIZON_MINUTES = 5.0
 

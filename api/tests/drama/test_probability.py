@@ -1,6 +1,6 @@
 import pytest
 
-from nightkeeper.drama.probability import outcome_probabilities, pre_match_rates
+from fancut.drama.probability import outcome_probabilities, pre_match_rates
 
 
 def test_probabilities_form_a_distribution() -> None:

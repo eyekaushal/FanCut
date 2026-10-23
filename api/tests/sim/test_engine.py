@@ -1,11 +1,11 @@
 import itertools
 from collections import Counter
 
-from nightkeeper.sim import Match
-from nightkeeper.sim.archetypes import SPECS
-from nightkeeper.sim.clubs import TEAMS
-from nightkeeper.sim.engine import MatchSimulator
-from nightkeeper.sim.schema import Archetype, EventType, Side
+from fancut.sim import Match
+from fancut.sim.archetypes import SPECS
+from fancut.sim.clubs import TEAMS
+from fancut.sim.engine import MatchSimulator
+from fancut.sim.schema import Archetype, EventType, Side
 
 
 def _simulate(seed: int) -> tuple:

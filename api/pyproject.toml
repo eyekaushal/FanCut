@@ -1,7 +1,7 @@
 [project]
-name = "nightkeeper"
+name = "fancut"
 version = "0.1.0"
-description = "Nightkeeper API: watches the match while you sleep and wakes you before the moment that matters."
+description = "FanCut API: watches the match while you sleep and wakes you before the moment that matters."
 readme = "README.md"
 license = "MIT"
 authors = [
@@ -9,14 +9,17 @@ authors = [
 ]
 requires-python = ">=3.12"
 dependencies = [
+    "agent-framework-core>=1.23.0",
+    "agent-framework-openai>=1.17.0",
     "fastapi>=0.161.1",
     "pydantic>=2.14.1",
     "pydantic-settings>=2.16.1",
+    "tzdata>=2026.5",
     "uvicorn[standard]>=0.54.0",
 ]
 
 [project.scripts]
-nightkeeper = "nightkeeper.__main__:main"
+fancut = "fancut.__main__:main"
 
 [build-system]
 requires = ["uv_build>=0.11.27,<0.12.0"]
@@ -41,7 +44,7 @@ select = ["E", "F", "W", "I", "B", "UP", "SIM", "N", "RUF"]
 [tool.mypy]
 python_version = "3.12"
 strict = true
-packages = ["nightkeeper"]
+packages = ["fancut"]
 mypy_path = "src"
 
 [tool.pytest.ini_options]

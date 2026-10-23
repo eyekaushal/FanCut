@@ -18,7 +18,7 @@ football clock (``Event.clock``).
 from collections.abc import Callable, Iterable, Sequence
 from dataclasses import dataclass
 
-from nightkeeper.sim.schema import Event, EventType, GroundTruth, Side, Verdict, Window
+from fancut.sim.schema import Event, EventType, GroundTruth, Side, Verdict, Window
 
 DECISIVE_LEAD_SECONDS = 180.0
 BIG_CHANCE_XG = 0.3

@@ -3,9 +3,9 @@ import statistics
 
 import pytest
 
-from nightkeeper.drama import DramaEngine, DramaSnapshot
-from nightkeeper.sim import Match
-from nightkeeper.sim.schema import Archetype, EventType
+from fancut.drama import DramaEngine, DramaSnapshot
+from fancut.sim import Match
+from fancut.sim.schema import Archetype, EventType
 
 
 @pytest.fixture(scope="module")
