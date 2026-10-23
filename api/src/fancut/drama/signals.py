@@ -3,7 +3,7 @@
 import math
 from collections import deque
 
-from nightkeeper.sim.schema import PITCH_LENGTH, Event, EventType, Side
+from fancut.sim.schema import PITCH_LENGTH, Event, EventType, Side
 
 WINDOW_SECONDS = 5 * 60.0
 THREAT_HALF_LIFE_MINUTES = 5.0

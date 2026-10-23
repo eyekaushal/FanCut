@@ -1,9 +1,9 @@
-"""Print a match's drama timeline: ``uv run python -m nightkeeper.drama m019``."""
+"""Print a match's drama timeline: ``uv run python -m fancut.drama m019``."""
 
 import argparse
 
-from nightkeeper.drama.engine import DramaEngine
-from nightkeeper.sim.league import build_league
+from fancut.drama.engine import DramaEngine
+from fancut.sim.league import build_league
 
 BARS = " ▁▂▃▄▅▆▇█"
 

@@ -1,10 +1,10 @@
 from collections import Counter
 
-from nightkeeper.sim import Match, build_league
-from nightkeeper.sim.archetypes import SPECS
-from nightkeeper.sim.labels import summarize
-from nightkeeper.sim.league import DEFAULT_MIX
-from nightkeeper.sim.schema import Archetype, Verdict
+from fancut.sim import Match, build_league
+from fancut.sim.archetypes import SPECS
+from fancut.sim.labels import summarize
+from fancut.sim.league import DEFAULT_MIX
+from fancut.sim.schema import Archetype, Verdict
 
 EXPECTED_VERDICT = {
     Archetype.LATE_COMEBACK: Verdict.WATCH,

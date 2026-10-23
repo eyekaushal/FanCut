@@ -2,7 +2,7 @@
 
 from dataclasses import dataclass, field
 
-from nightkeeper.sim.schema import Side
+from fancut.sim.schema import Side
 
 
 @dataclass

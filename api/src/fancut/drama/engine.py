@@ -5,10 +5,10 @@ from collections.abc import Iterable
 
 from pydantic import BaseModel, ConfigDict
 
-from nightkeeper.drama.measures import surprise, suspense, total_variation
-from nightkeeper.drama.probability import Outcome, outcome_probabilities, pre_match_rates
-from nightkeeper.drama.signals import PlayWindow, ThreatRate
-from nightkeeper.sim.schema import Event, EventType, MatchMeta, Side
+from fancut.drama.measures import surprise, suspense, total_variation
+from fancut.drama.probability import Outcome, outcome_probabilities, pre_match_rates
+from fancut.drama.signals import PlayWindow, ThreatRate
+from fancut.sim.schema import Event, EventType, MatchMeta, Side
 
 LEAGUE_THREAT_PER_MINUTE = 0.025  # average threat per side per minute in the synthetic league
 FORM_RANGE = (0.5, 2.0)  # recent form can halve or double a side's normal scoring rate, no more

@@ -1,5 +1,5 @@
-from nightkeeper.sim.labels import DECISIVE_LEAD_SECONDS, Summary, label, verdict
-from nightkeeper.sim.schema import Event, EventType, Side, Verdict
+from fancut.sim.labels import DECISIVE_LEAD_SECONDS, Summary, label, verdict
+from fancut.sim.schema import Event, EventType, Side, Verdict
 
 
 def _event(

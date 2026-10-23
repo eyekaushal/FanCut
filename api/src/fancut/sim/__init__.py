@@ -1,8 +1,8 @@
 """Synthetic league: fictional clubs, a seeded match simulator, drama archetypes and labels."""
 
-from nightkeeper.sim.league import build_league, generate_match
-from nightkeeper.sim.replay import Replayer
-from nightkeeper.sim.schema import Archetype, Event, EventType, Match, Side
+from fancut.sim.league import build_league, generate_match
+from fancut.sim.replay import Replayer
+from fancut.sim.schema import Archetype, Event, EventType, Match, Side
 
 __all__ = [
     "Archetype",

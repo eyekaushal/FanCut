@@ -1,6 +1,6 @@
 import pytest
 
-from nightkeeper.sim import Match, build_league
+from fancut.sim import Match, build_league
 
 
 @pytest.fixture(scope="session")

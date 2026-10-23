@@ -1,10 +1,10 @@
-"""Export the synthetic league as JSON: ``uv run python -m nightkeeper.sim --out data/league``."""
+"""Export the synthetic league as JSON: ``uv run python -m fancut.sim --out data/league``."""
 
 import argparse
 import json
 from pathlib import Path
 
-from nightkeeper.sim.league import build_league
+from fancut.sim.league import build_league
 
 
 def main() -> None:

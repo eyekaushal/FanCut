@@ -1,6 +1,6 @@
 import pytest
 
-from nightkeeper.sim import Match, Replayer
+from fancut.sim import Match, Replayer
 
 
 async def test_replay_preserves_order_and_compresses_time(league: list[Match]) -> None:

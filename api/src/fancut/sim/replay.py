@@ -3,7 +3,7 @@
 import asyncio
 from collections.abc import AsyncIterator, Awaitable, Callable, Sequence
 
-from nightkeeper.sim.schema import Event
+from fancut.sim.schema import Event
 
 Sleep = Callable[[float], Awaitable[None]]
 

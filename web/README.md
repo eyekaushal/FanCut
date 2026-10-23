@@ -1,4 +1,4 @@
-# Nightkeeper Web
+# FanCut Web
 
 Next.js 16 (App Router), React 19, TypeScript (strict), Tailwind CSS v4.
 

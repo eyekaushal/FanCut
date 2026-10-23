@@ -3,7 +3,7 @@
 import random
 from dataclasses import dataclass
 
-from nightkeeper.sim.schema import Player, Position, Team
+from fancut.sim.schema import Player, Position, Team
 
 # 4-3-3: GK, four defenders, three midfielders, three forwards, then five substitutes.
 _FORMATION = (

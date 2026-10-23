@@ -5,10 +5,10 @@ from collections import Counter
 
 import pytest
 
-from nightkeeper.sim.archetypes import SPECS
-from nightkeeper.sim.clubs import TEAMS
-from nightkeeper.sim.engine import MatchSimulator
-from nightkeeper.sim.schema import Archetype, EventType
+from fancut.sim.archetypes import SPECS
+from fancut.sim.clubs import TEAMS
+from fancut.sim.engine import MatchSimulator
+from fancut.sim.schema import Archetype, EventType
 
 MATCHES = 200
 

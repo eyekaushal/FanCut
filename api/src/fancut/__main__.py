@@ -1,9 +1,9 @@
-"""Run the API locally: ``uv run nightkeeper``."""
+"""Run the API locally: ``uv run fancut``."""
 
 import uvicorn
 
-from nightkeeper.api.app import create_app
-from nightkeeper.config import get_settings
+from fancut.api.app import create_app
+from fancut.config import get_settings
 
 
 def main() -> None:

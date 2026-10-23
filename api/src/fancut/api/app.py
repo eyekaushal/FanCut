@@ -4,8 +4,8 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
-from nightkeeper import __version__
-from nightkeeper.config import Settings, get_settings
+from fancut import __version__
+from fancut.config import Settings, get_settings
 
 
 class Health(BaseModel):
@@ -16,7 +16,7 @@ class Health(BaseModel):
 
 def create_app(settings: Settings | None = None) -> FastAPI:
     settings = settings or get_settings()
-    app = FastAPI(title="Nightkeeper API", version=__version__)
+    app = FastAPI(title="FanCut API", version=__version__)
     app.add_middleware(
         CORSMiddleware,
         allow_origins=settings.cors_origins,

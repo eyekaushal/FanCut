@@ -1,7 +1,7 @@
 import pytest
 
-from nightkeeper.drama.measures import surprise, suspense, total_variation
-from nightkeeper.drama.probability import Outcome
+from fancut.drama.measures import surprise, suspense, total_variation
+from fancut.drama.probability import Outcome
 
 RATE = 0.016
 

@@ -3,11 +3,11 @@
 import random
 from datetime import UTC, datetime, timedelta
 
-from nightkeeper.sim.archetypes import SPECS
-from nightkeeper.sim.clubs import TEAMS
-from nightkeeper.sim.engine import MatchSimulator
-from nightkeeper.sim.labels import label, summarize
-from nightkeeper.sim.schema import Archetype, Match, MatchMeta, Team
+from fancut.sim.archetypes import SPECS
+from fancut.sim.clubs import TEAMS
+from fancut.sim.engine import MatchSimulator
+from fancut.sim.labels import label, summarize
+from fancut.sim.schema import Archetype, Match, MatchMeta, Team
 
 MAX_ATTEMPTS = 500
 FIRST_KICKOFF = datetime(2026, 10, 24, 19, 0, tzinfo=UTC)  # 00:30 IST: a real night match

@@ -9,9 +9,9 @@ retries with the next seed until it does, so every labelled match is genuine.
 from collections.abc import Callable
 from dataclasses import dataclass
 
-from nightkeeper.sim.labels import Summary
-from nightkeeper.sim.schema import Archetype, Side, Stakes
-from nightkeeper.sim.state import GameState
+from fancut.sim.labels import Summary
+from fancut.sim.schema import Archetype, Side, Stakes
+from fancut.sim.state import GameState
 
 Intensity = Callable[[Side, GameState, Side], float]
 """(side, state, favourite) -> attacking multiplier; 1.0 is neutral."""
