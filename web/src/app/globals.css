@@ -1,0 +1,20 @@
+@import "tailwindcss";
+
+/* Placeholder palette. The full "Midnight to Morning" token set lands with the design system. */
+:root {
+  --ink-950: #0b1020;
+  --moon-50: #f4f1ea;
+}
+
+@theme inline {
+  --color-ink-950: var(--ink-950);
+  --color-moon-50: var(--moon-50);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+body {
+  background: var(--ink-950);
+  color: var(--moon-50);
+  font-family: var(--font-geist-sans), system-ui, sans-serif;
+}
