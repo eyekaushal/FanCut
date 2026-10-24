@@ -3,7 +3,16 @@
  * Pure: the same events always produce the same state, which is what the tests check.
  */
 
-import type { ActionData, CutData, FantasyData, NarrationData, Overlay, ScoreLine, TableLine } from "@/lib/overlay";
+import type {
+  ActionData,
+  CutData,
+  FantasyData,
+  NarrationData,
+  Overlay,
+  RankedMatch,
+  ScoreLine,
+  TableLine,
+} from "@/lib/overlay";
 
 /** How many pitch actions the renderer keeps; older ones have faded anyway. */
 export const ACTIONS_KEPT = 40;
@@ -18,8 +27,12 @@ export type ChannelState = {
   matches: ScoreLine[];
   table: TableLine[];
   fantasy: FantasyData | null;
-  /** Recent plays in the match on air, newest last. */
+  /** Recent plays, newest last; the pitch shows those of the match on screen. */
   actions: ActionData[];
+  /** The match the fan locked the pitch to, or null when the Director has the picture. */
+  focus: string | null;
+  /** The Director's latest ranking of the focused match, refreshed as the matchday moves. */
+  focusRanking: RankedMatch | null;
   /** Matchday seconds of the latest event. */
   t: number;
   seq: number;
@@ -34,6 +47,8 @@ export const initialState: ChannelState = {
   table: [],
   fantasy: null,
   actions: [],
+  focus: null,
+  focusRanking: null,
   t: 0,
   seq: 0,
   ended: false,
@@ -46,13 +61,7 @@ export function applyOverlay(state: ChannelState, overlay: Overlay): ChannelStat
 
   switch (overlay.type) {
     case "cut":
-      return {
-        ...next,
-        cut: overlay.data,
-        cuts: [...state.cuts, overlay.data],
-        // A new picture means a new pitch; a replay keeps its own moment's plays.
-        actions: overlay.data.match_id === state.cut?.match_id ? state.actions : [],
-      };
+      return { ...next, cut: overlay.data, cuts: [...state.cuts, overlay.data] };
     case "narration":
       return { ...next, narrations: { ...state.narrations, [overlay.data.decision_id]: overlay.data } };
     case "action":
@@ -63,6 +72,8 @@ export function applyOverlay(state: ChannelState, overlay: Overlay): ChannelStat
       return { ...next, table: overlay.data.rows };
     case "fantasy":
       return { ...next, fantasy: overlay.data };
+    case "focus":
+      return { ...next, focus: overlay.data.match_id, focusRanking: overlay.data.ranking };
     case "end":
       return { ...next, ended: true };
   }
@@ -76,4 +87,27 @@ export function narrationOnAir(state: ChannelState): NarrationData | null {
 /** The scoreboard line of the match on air. */
 export function matchOnAir(state: ChannelState): ScoreLine | null {
   return state.cut ? (state.matches.find((m) => m.match_id === state.cut?.match_id) ?? null) : null;
+}
+
+/** The match on screen: the fan's focus if set, otherwise the Director's pick. */
+export function matchShown(state: ChannelState): ScoreLine | null {
+  if (state.focus) return state.matches.find((m) => m.match_id === state.focus) ?? null;
+  return matchOnAir(state);
+}
+
+/** The plays to draw for the match on screen. */
+export function actionsShown(state: ChannelState): ActionData[] {
+  const shown = state.focus ?? state.cut?.match_id;
+  return shown ? state.actions.filter((a) => a.match_id === shown) : [];
+}
+
+/**
+ * The Director's ranking of `matchId`: the live one if it is the focus, else what the
+ * latest cut knew (its own pick or one of the alternatives it beat), else nothing.
+ */
+export function rankingOf(state: ChannelState, matchId: string): RankedMatch | null {
+  if (state.focus === matchId && state.focusRanking) return state.focusRanking;
+  if (!state.cut) return null;
+  if (state.cut.chosen.match_id === matchId) return state.cut.chosen;
+  return state.cut.alternatives.find((a) => a.match_id === matchId) ?? null;
 }

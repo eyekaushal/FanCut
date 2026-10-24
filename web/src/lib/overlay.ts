@@ -63,6 +63,16 @@ export type CutFacts = {
   pressure_out_of_10: number | null;
 };
 
+/** A match's relevance to this fan with the evidence behind it. */
+export type RankedMatch = {
+  match_id: string;
+  value: number;
+  drama: number;
+  stake: number;
+  /** Machine-readable, e.g. "your_club", "rival:oakbridge", "fantasy_player:ash-09", "half_time". */
+  reasons: string[];
+};
+
 export type CutData = {
   decision_id: number;
   kind: CutFacts["kind"];
@@ -71,7 +81,8 @@ export type CutData = {
   text: string; // the correct reference line, shown at once
   language: Language;
   facts: CutFacts;
-  alternatives: { match_id: string; value: number }[];
+  chosen: RankedMatch;
+  alternatives: RankedMatch[];
   value: number;
 };
 
@@ -125,4 +136,5 @@ export type Overlay =
   | { type: "scoreboard"; seq: number; t: number; data: { matches: ScoreLine[] } }
   | { type: "table"; seq: number; t: number; data: { rows: TableLine[] } }
   | { type: "fantasy"; seq: number; t: number; data: FantasyData }
+  | { type: "focus"; seq: number; t: number; data: { match_id: string | null; ranking: RankedMatch | null } }
   | { type: "end"; seq: number; t: number; data: Record<string, never> };

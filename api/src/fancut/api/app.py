@@ -50,6 +50,10 @@ class ChannelCreated(BaseModel):
     audit: str
 
 
+class FocusRequest(BaseModel):
+    match_id: str | None = None  # None releases the focus
+
+
 def create_app(settings: Settings | None = None, services: Services | None = None) -> FastAPI:
     settings = settings or get_settings()
     services = services or build_services(settings)
@@ -161,6 +165,16 @@ def create_app(settings: Settings | None = None, services: Services | None = Non
             yield ServerSentEvent(
                 event=overlay.type.value, id=str(overlay.seq), data=overlay.model_dump(mode="json")
             )
+
+    @app.post("/channels/{channel_id}/focus", tags=["channel"])
+    def focus(channel_id: str, request: FocusRequest) -> dict[str, str | None]:
+        """Lock the pitch to one match while the Director keeps deciding; null releases."""
+        session = _session(services, channel_id)
+        known = {m.meta.match_id for m in services.matchday.matches}
+        if request.match_id is not None and request.match_id not in known:
+            raise HTTPException(status_code=404, detail="unknown match")
+        session.set_focus(request.match_id)
+        return {"focus": session.focus}
 
     @app.get("/channels/{channel_id}/audit", tags=["channel"])
     def audit(channel_id: str) -> list[dict[str, Any]]:

@@ -20,6 +20,7 @@ class OverlayType(StrEnum):
     SCOREBOARD = "scoreboard"  # every match: score, minute, status
     TABLE = "table"  # the league table as it stands
     FANTASY = "fantasy"  # the fan's fantasy points
+    FOCUS = "focus"  # the fan locked the picture to a match (or released it)
     END = "end"
 
 

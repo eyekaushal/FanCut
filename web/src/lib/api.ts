@@ -70,6 +70,12 @@ export const api = {
   createChannel: (body: ChannelRequest) =>
     request<ChannelCreated>("/channels", { method: "POST", body: JSON.stringify(body) }),
   audit: (channelId: string) => request<unknown[]>(`/channels/${channelId}/audit`),
+  /** Lock the pitch to one match while the Director keeps deciding; null releases. */
+  setFocus: (channelId: string, matchId: string | null) =>
+    request<{ focus: string | null }>(`/channels/${channelId}/focus`, {
+      method: "POST",
+      body: JSON.stringify({ match_id: matchId }),
+    }),
   /** team_id → colour, for the table's dots. */
   clubColors(matchday: Matchday): Record<string, string> {
     const colors: Record<string, string> = {};

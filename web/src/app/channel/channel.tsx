@@ -6,6 +6,7 @@ import { useEffect, useMemo, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { FantasyPanel } from "@/components/ui/fantasy-panel";
+import { FocusCard } from "@/components/ui/focus-card";
 import { LanguageSwitch } from "@/components/ui/language-switch";
 import { LeagueTable } from "@/components/ui/league-table";
 import { MatchCard } from "@/components/ui/match-card";
@@ -15,7 +16,7 @@ import { Pitch } from "@/components/ui/pitch";
 import { ReasonCard } from "@/components/ui/reason-card";
 import { ScoreStrip } from "@/components/ui/score-strip";
 import { api, type FanProfile, type Matchday } from "@/lib/api";
-import { matchOnAir, narrationOnAir } from "@/lib/channel-state";
+import { actionsShown, matchOnAir, matchShown, narrationOnAir, rankingOf } from "@/lib/channel-state";
 import { LANGUAGES, t, type Language } from "@/lib/i18n";
 import { useChannel } from "@/lib/use-channel";
 
@@ -68,6 +69,14 @@ export function Channel() {
 
   const { state, connection } = useChannel(channelId);
   const onAir = matchOnAir(state);
+  const shown = matchShown(state);
+  const focused = state.focus !== null;
+
+  // Focus: tap a match in the strip to lock the pitch to it; tap again, or the button, to release.
+  const setFocus = (matchId: string | null) => {
+    if (channelId) void api.setFocus(channelId, matchId).catch(() => undefined);
+  };
+  const toggleFocus = (matchId: string) => setFocus(state.focus === matchId ? null : matchId);
   const colors = useMemo(() => (matchday ? api.clubColors(matchday) : {}), [matchday]);
   const fanClub = useMemo(
     () => matchday?.fixtures.flatMap((f) => [f.home, f.away]).find((c) => c.id === profile?.club_id)?.name ?? null,
@@ -106,9 +115,19 @@ export function Channel() {
 
       <div className="grid gap-5 lg:grid-cols-[minmax(0,7fr)_minmax(280px,3fr)]">
         <div className="min-w-0 space-y-5">
-          {onAir && state.cut ? (
-            <MatchCard match={onAir} lang={lang} fanClub={fanClub} fanClubPosition={fanPosition} seed={cutSeed(state.cut.match_id)}>
-              <ReasonCard cut={state.cut} narration={narrationOnAir(state)} lang={lang} />
+          {shown && state.cut ? (
+            <MatchCard match={shown} lang={lang} fanClub={fanClub} fanClubPosition={fanPosition} seed={cutSeed(shown.match_id)}>
+              {focused ? (
+                <FocusCard
+                  ranking={rankingOf(state, shown.match_id)}
+                  onAir={state.cut.chosen}
+                  onAirName={onAir ? `${onAir.home} ${onAir.home_goals}–${onAir.away_goals} ${onAir.away}` : null}
+                  lang={lang}
+                  onRelease={() => setFocus(null)}
+                />
+              ) : (
+                <ReasonCard cut={state.cut} narration={narrationOnAir(state)} lang={lang} />
+              )}
             </MatchCard>
           ) : (
             <div className="grain h-[320px] animate-pulse rounded-card bg-bg-elevated" aria-busy />
@@ -116,20 +135,26 @@ export function Channel() {
 
           <div className="rounded-panel border border-hairline bg-bg-elevated p-3 sm:p-4">
             <div className="aspect-[105/68] w-full">
-              {onAir ? (
-                <Pitch actions={state.actions} homeColor={onAir.home_color} awayColor={onAir.away_color} />
+              {shown ? (
+                <Pitch actions={actionsShown(state)} homeColor={shown.home_color} awayColor={shown.away_color} />
               ) : null}
             </div>
-            {onAir && (
+            {shown && (
               <div className="t-caption mt-2 flex justify-between text-fg-muted">
-                <span>{onAir.home} →</span>
-                <span>← {onAir.away}</span>
+                <span>{shown.home} →</span>
+                <span>← {shown.away}</span>
               </div>
             )}
           </div>
 
           {state.matches.length > 0 && (
-            <ScoreStrip matches={state.matches} lang={lang} fanClub={fanClub} selected={state.cut?.match_id} />
+            <ScoreStrip
+              matches={state.matches}
+              lang={lang}
+              fanClub={fanClub}
+              selected={shown?.match_id}
+              onSelect={toggleFocus}
+            />
           )}
         </div>
 

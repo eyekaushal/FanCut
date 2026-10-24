@@ -8,7 +8,7 @@ import type { Overlay } from "@/lib/overlay";
 
 export type Connection = "connecting" | "live" | "ended" | "lost";
 
-const EVENT_TYPES: Overlay["type"][] = ["cut", "narration", "action", "scoreboard", "table", "fantasy", "end"];
+const EVENT_TYPES: Overlay["type"][] = ["cut", "narration", "action", "scoreboard", "table", "fantasy", "focus", "end"];
 
 /**
  * Subscribes to one channel's SSE stream and folds every overlay into state. The

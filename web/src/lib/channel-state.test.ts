@@ -2,7 +2,16 @@ import { describe, expect, it } from "vitest";
 
 import { cut, narration, replay, scoreboard, table } from "@/lib/demo-data";
 import type { ActionData, Overlay } from "@/lib/overlay";
-import { ACTIONS_KEPT, applyOverlay, initialState, matchOnAir, narrationOnAir } from "./channel-state";
+import {
+  ACTIONS_KEPT,
+  actionsShown,
+  applyOverlay,
+  initialState,
+  matchOnAir,
+  matchShown,
+  narrationOnAir,
+  rankingOf,
+} from "./channel-state";
 
 let seq = 0;
 const at = (type: Overlay["type"], data: unknown, t = 0): Overlay =>
@@ -39,13 +48,34 @@ describe("applyOverlay", () => {
     expect(applyOverlay(state, first)).toBe(state);
   });
 
-  it("clears the pitch when the picture cuts to another match, and keeps it otherwise", () => {
-    const onAir = play([at("cut", cut("en")), at("action", pass("md34-09"))]);
-    expect(onAir.actions).toHaveLength(1);
-    const stayed = applyOverlay(onAir, at("cut", { ...cut("en"), decision_id: 10 }));
-    expect(stayed.actions).toHaveLength(1);
-    const moved = applyOverlay(onAir, at("cut", replay("en")));
-    expect(moved.actions).toHaveLength(0);
+  it("keeps every recent play and lets the pitch pick the match on screen", () => {
+    const state = play([
+      at("cut", cut("en")),
+      at("action", pass("md34-09")),
+      at("action", pass("md34-03")),
+      at("cut", replay("en")),
+    ]);
+    expect(state.actions).toHaveLength(2);
+    expect(actionsShown(state).map((a) => a.match_id)).toEqual(["md34-03"]);
+  });
+
+  it("locks the pitch to the fan's focus and releases it", () => {
+    const base = play([at("cut", cut("en")), at("action", pass("md34-09")), at("action", pass("md34-05"))]);
+    const ranking = { match_id: "md34-05", value: 0.6, drama: 0.3, stake: 0.3, reasons: ["stakes:relegation"] };
+    const focused = applyOverlay(base, at("focus", { match_id: "md34-05", ranking }));
+    expect(matchShown(focused)).toBeNull(); // no scoreboard yet
+    expect(actionsShown(focused).map((a) => a.match_id)).toEqual(["md34-05"]);
+    expect(rankingOf(focused, "md34-05")).toBe(ranking); // live, even though no cut ranked it
+    const released = applyOverlay(focused, at("focus", { match_id: null, ranking: null }));
+    expect(actionsShown(released).map((a) => a.match_id)).toEqual(["md34-09"]);
+    expect(rankingOf(released, "md34-05")).toBeNull();
+  });
+
+  it("explains any match the latest cut ranked", () => {
+    const state = play([at("cut", cut("en"))]);
+    expect(rankingOf(state, "md34-09")?.reasons).toContain("your_club");
+    expect(rankingOf(state, "md34-03")?.value).toBe(1.31);
+    expect(rankingOf(state, "md34-10")).toBeNull();
   });
 
   it("keeps only the most recent plays", () => {

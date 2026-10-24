@@ -3,6 +3,10 @@
 Cuts go out the instant the Director decides, carrying the correct reference line.
 The model-written line follows as a ``narration`` event when it is ready, so a slow or
 failing model never delays the picture.
+
+The fan can *focus*: lock the pitch to one match while the Director keeps deciding.
+Cuts still go out (the fan sees where the Director would be), but the plays on the
+pitch come from the focused match until the focus is released.
 """
 
 import asyncio
@@ -14,6 +18,7 @@ from fancut.agents.facts import CutFacts, facts_for
 from fancut.agents.templates import narrate_cut
 from fancut.api.overlay import Overlay, OverlayType, ScoreLine, TableLine
 from fancut.director.director import Decision, Director
+from fancut.director.relevance import Relevance, relevance
 from fancut.matchday.matchday import Matchday
 from fancut.matchday.state import MatchdayState, Update
 from fancut.profile import FanProfile, Language
@@ -57,6 +62,13 @@ class ChannelSession:
         self._until = until_minute
         self._seq = 0
         self._t = 0.0
+        self.focus: str | None = None
+        self._focus_changed = False
+
+    def set_focus(self, match_id: str | None) -> None:
+        """Lock the pitch to ``match_id``, or release it with ``None``."""
+        self.focus = match_id
+        self._focus_changed = True
 
     async def overlays(self) -> AsyncIterator[Overlay]:
         state = MatchdayState(self._matchday)
@@ -75,11 +87,16 @@ class ChannelSession:
                 yield self._cut(
                     decision, facts_for(decision, state, self.profile), pending, narrations
                 )
+            if self._focus_changed:
+                self._focus_changed = False
+                yield self._focus_overlay(state)
             for extra in self._extras(update, state, director):
                 yield extra
             if event.t >= next_scoreboard:
                 next_scoreboard = event.t + SCOREBOARD_EVERY
                 yield self._overlay(OverlayType.SCOREBOARD, self._scoreboard(state, director))
+                if self.focus is not None:  # the focused match's standing moves with the play
+                    yield self._focus_overlay(state)
             while not narrations.empty():
                 yield self._narration(*narrations.get_nowait())
 
@@ -129,13 +146,18 @@ class ChannelSession:
                 "text": reference,
                 "language": self.language.value,
                 "facts": facts.model_dump(),
-                "alternatives": [
-                    {"match_id": a.match_id, "value": round(a.value, 3)}
-                    for a in decision.alternatives
-                ],
+                "chosen": _ranked(decision.chosen),
+                "alternatives": [_ranked(a) for a in decision.alternatives],
                 "value": round(decision.chosen.value, 3),
             },
         )
+
+    def _focus_overlay(self, state: MatchdayState) -> Overlay:
+        """The focus and, while one is set, the Director's current ranking of that match."""
+        ranking = None
+        if self.focus is not None:
+            ranking = _ranked(relevance(self.profile, state.feeds[self.focus], state))
+        return self._overlay(OverlayType.FOCUS, {"match_id": self.focus, "ranking": ranking})
 
     def _narration(self, decision_id: int, line: Narration) -> Overlay:
         return self._overlay(
@@ -150,9 +172,10 @@ class ChannelSession:
         )
 
     def _extras(self, update: Update, state: MatchdayState, director: Director) -> list[Overlay]:
-        """Pitch actions for the match on air, plus table and fantasy changes."""
+        """Pitch actions for the match shown, plus table and fantasy changes."""
         event, extras = update.event, []
-        if event.match_id == director.on_air and event.type in VISIBLE_ACTIONS:
+        shown = self.focus or director.on_air
+        if event.match_id == shown and event.type in VISIBLE_ACTIONS:
             player = state.players[event.player_id].name if event.player_id else None
             extras.append(
                 self._overlay(
@@ -234,3 +257,14 @@ class ChannelSession:
     def _overlay(self, type_: OverlayType, data: dict[str, Any]) -> Overlay:
         self._seq += 1
         return Overlay(seq=self._seq, t=round(self._t, 2), type=type_, data=data)
+
+
+def _ranked(relevance: Relevance) -> dict[str, Any]:
+    """A match's relevance with the evidence behind it, so a cut can explain itself."""
+    return {
+        "match_id": relevance.match_id,
+        "value": round(relevance.value, 3),
+        "drama": round(relevance.drama, 3),
+        "stake": round(relevance.stake, 3),
+        "reasons": list(relevance.reasons),
+    }
