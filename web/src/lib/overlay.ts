@@ -63,6 +63,16 @@ export type CutFacts = {
   pressure_out_of_10: number | null;
 };
 
+/** A match's relevance to this fan with the evidence behind it. */
+export type RankedMatch = {
+  match_id: string;
+  value: number;
+  drama: number;
+  stake: number;
+  /** Machine-readable, e.g. "your_club", "rival:oakbridge", "fantasy_player:ash-09", "half_time". */
+  reasons: string[];
+};
+
 export type CutData = {
   decision_id: number;
   kind: CutFacts["kind"];
@@ -71,7 +81,8 @@ export type CutData = {
   text: string; // the correct reference line, shown at once
   language: Language;
   facts: CutFacts;
-  alternatives: { match_id: string; value: number }[];
+  chosen: RankedMatch;
+  alternatives: RankedMatch[];
   value: number;
 };
 
@@ -83,6 +94,36 @@ export type NarrationData = {
   language: Language;
 };
 
+/**
+ * A play in the match on air. Metres on a 105 × 68 pitch; home attacks towards
+ * x = 105 and away towards x = 0, with no switch at half-time.
+ */
+export type ActionData = {
+  match_id: string;
+  minute: number;
+  type:
+    | "pass"
+    | "carry"
+    | "shot"
+    | "goal"
+    | "save"
+    | "tackle"
+    | "interception"
+    | "corner"
+    | "free_kick"
+    | "foul"
+    | "card"
+    | "offside";
+  side: "home" | "away" | null;
+  player: string | null;
+  x: number | null;
+  y: number | null;
+  end_x: number | null;
+  end_y: number | null;
+  outcome: boolean | null;
+  xg: number | null;
+};
+
 export type FantasyData = {
   total: number;
   players: { name: string; points: number; captain: boolean }[];
@@ -91,7 +132,9 @@ export type FantasyData = {
 export type Overlay =
   | { type: "cut"; seq: number; t: number; data: CutData }
   | { type: "narration"; seq: number; t: number; data: NarrationData }
+  | { type: "action"; seq: number; t: number; data: ActionData }
   | { type: "scoreboard"; seq: number; t: number; data: { matches: ScoreLine[] } }
   | { type: "table"; seq: number; t: number; data: { rows: TableLine[] } }
   | { type: "fantasy"; seq: number; t: number; data: FantasyData }
+  | { type: "focus"; seq: number; t: number; data: { match_id: string | null; ranking: RankedMatch | null } }
   | { type: "end"; seq: number; t: number; data: Record<string, never> };

@@ -68,6 +68,48 @@ def test_every_cut_is_narrated_and_actions_come_only_from_the_match_on_air(
             assert overlay["data"]["match_id"] == on_air
 
 
+def test_every_cut_carries_the_evidence_for_its_choice_and_the_alternatives(
+    client: TestClient,
+) -> None:
+    opening = _stream(client, "arjun", until=3)[0]["data"]
+    assert opening["chosen"]["match_id"] == opening["match_id"]
+    assert opening["chosen"]["value"] == opening["value"]
+    assert "your_club" in opening["chosen"]["reasons"]
+    assert len(opening["alternatives"]) == 3
+    assert {"match_id", "value", "drama", "stake", "reasons"} <= opening["alternatives"][0].keys()
+
+
+def test_focus_locks_the_pitch_to_the_fans_match_while_the_director_keeps_cutting(
+    client: TestClient,
+) -> None:
+    channel = client.post(
+        "/channels", json={"profile_id": "maya", "speed": 600, "until_minute": 12}
+    ).json()
+    focus = client.post(f"/channels/{channel['channel_id']}/focus", json={"match_id": "md34-05"})
+    assert focus.json() == {"focus": "md34-05"}
+
+    overlays = []
+    with client.stream("GET", channel["stream"]) as response:
+        for line in response.iter_lines():
+            if line.startswith("data:"):
+                overlays.append(json.loads(line.removeprefix("data:")))
+    focused = [o["data"] for o in overlays if o["type"] == "focus"]
+    assert focused and all(f["match_id"] == "md34-05" for f in focused)
+    assert focused[0]["ranking"]["match_id"] == "md34-05"
+    assert {"value", "drama", "stake", "reasons"} <= focused[0]["ranking"].keys()
+    assert len(focused) > 1  # the ranking is refreshed as the matchday moves
+    assert all(o["data"]["match_id"] == "md34-05" for o in overlays if o["type"] == "action")
+    assert any(o["type"] == "cut" for o in overlays)  # the Director never stopped
+
+
+def test_focus_refuses_an_unknown_match_and_null_releases_it(client: TestClient) -> None:
+    channel = client.post("/channels", json={"profile_id": "maya", "speed": 600}).json()
+    url = f"/channels/{channel['channel_id']}/focus"
+    assert client.post(url, json={"match_id": "md99-01"}).status_code == 404
+    assert client.post(url, json={"match_id": None}).json() == {"focus": None}
+    assert client.post("/channels/nope/focus", json={"match_id": None}).status_code == 404
+
+
 def test_the_audit_trail_records_every_decision_with_its_evidence(client: TestClient) -> None:
     channel = client.post(
         "/channels", json={"profile_id": "maya", "speed": 600, "until_minute": 10}

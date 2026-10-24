@@ -45,6 +45,21 @@ const STRINGS = {
   allMatches:  { en: "All matches",   hi: "सभी मैच",          hinglish: "Sabhi match" },
   fantasyPts:  { en: "Fantasy points", hi: "फ़ैंटेसी अंक",      hinglish: "Fantasy points" },
   language:    { en: "Language",      hi: "भाषा",             hinglish: "Bhasha" },
+  focus:       { en: "Focus",         hi: "फ़ोकस",            hinglish: "Focus" },
+  focusOn:     { en: "Focus on this match", hi: "इस मैच पर फ़ोकस", hinglish: "Is match par focus" },
+  backToDirector: { en: "Back to the Director", hi: "डायरेक्टर के पास वापस", hinglish: "Director ke paas wapas" },
+  directorIsAt: { en: "The Director is at", hi: "डायरेक्टर अभी यहाँ है:", hinglish: "Director abhi yahan hai:" },
+  follow:      { en: "Follow",        hi: "वहाँ चलें",         hinglish: "Wahan chalein" },
+  whyNotHere:  { en: "Why the Director isn't here", hi: "डायरेक्टर यहाँ क्यों नहीं", hinglish: "Director yahan kyun nahi" },
+  relevance:   { en: "Relevance to you", hi: "आपके लिए अहमियत", hinglish: "Aapke liye relevance" },
+  drama:       { en: "Drama",         hi: "ड्रामा",           hinglish: "Drama" },
+  stake:       { en: "Your stake",    hi: "आपका दांव",         hinglish: "Aapka stake" },
+  onAirNow:    { en: "on air now",    hi: "अभी ऑन एयर",        hinglish: "abhi on air" },
+  notRanked:   { en: "Not among the Director's top picks right now.", hi: "अभी डायरेक्टर की शीर्ष पसंद में नहीं।", hinglish: "Abhi Director ki top picks mein nahi." },
+  reasonRival: { en: "table rival",   hi: "तालिका प्रतिद्वंद्वी", hinglish: "table rival" },
+  reasonFollowed: { en: "{n} you follow", hi: "{n} जिन्हें आप फ़ॉलो करते हैं", hinglish: "{n} jo aap follow karte ho" },
+  reasonFantasy: { en: "{n} in your fantasy team", hi: "{n} आपकी फ़ैंटेसी टीम में", hinglish: "{n} aapki fantasy team mein" },
+  reasonCaptain: { en: "your captain", hi: "आपके कप्तान",      hinglish: "aapke captain" },
 } satisfies Record<string, Record<Language, string>>;
 
 export type StringKey = keyof typeof STRINGS;
@@ -70,6 +85,29 @@ export type Stakes = keyof typeof STAKES_KEY;
 
 export function stakesLabel(lang: Language, stakes: Stakes): string {
   return t(lang, STAKES_KEY[stakes]);
+}
+
+/**
+ * The Director's machine-readable reasons ("your_club", "rival:oakbridge",
+ * "fantasy_player:ash-09", "stakes:title_race", "half_time") as short labels. Player
+ * reasons are counted rather than named, since the ids are not names.
+ */
+export function reasonLabels(lang: Language, reasons: string[]): string[] {
+  const labels: string[] = [];
+  const count = (prefix: string) => reasons.filter((r) => r.startsWith(prefix)).length;
+  if (reasons.includes("your_club")) labels.push(t(lang, "yourClub"));
+  if (count("rival:")) labels.push(t(lang, "reasonRival"));
+  const followed = count("followed_player:");
+  if (followed) labels.push(t(lang, "reasonFollowed", { n: followed }));
+  if (count("captain:")) labels.push(t(lang, "reasonCaptain"));
+  const fantasy = count("fantasy_player:");
+  if (fantasy) labels.push(t(lang, "reasonFantasy", { n: fantasy }));
+  for (const r of reasons) {
+    if (r.startsWith("stakes:")) labels.push(stakesLabel(lang, r.slice(7) as Stakes));
+    if (r === "half_time") labels.push(t(lang, "halfTime"));
+    if (r === "full_time") labels.push(t(lang, "fullTime"));
+  }
+  return labels;
 }
 
 /** Ordinals are language-specific: 2nd / 2रा / 2nd. */

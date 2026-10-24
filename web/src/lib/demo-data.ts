@@ -78,10 +78,11 @@ export function cut(lang: Language): CutData {
       suspense_out_of_10: null,
       pressure_out_of_10: null,
     },
+    chosen: { match_id: "md34-09", value: 1.85, drama: 0.41, stake: 2.3, reasons: ["your_club", "followed_player:kgc-09", "fantasy_player:glh-10", "stakes:title_race"] },
     alternatives: [
-      { match_id: "md34-03", value: 1.31 },
-      { match_id: "md34-01", value: 1.2 },
-      { match_id: "md34-07", value: 0.98 },
+      { match_id: "md34-03", value: 1.31, drama: 0.46, stake: 0.8, reasons: ["rival:oakbridge", "stakes:title_race"] },
+      { match_id: "md34-01", value: 1.2, drama: 0.37, stake: 0.8, reasons: ["rival:thornwick", "stakes:title_race"] },
+      { match_id: "md34-07", value: 0.98, drama: 0.44, stake: 0.3, reasons: ["fantasy_player:slv-10"] },
     ],
     value: 1.85,
   };
@@ -122,7 +123,8 @@ export function replay(lang: Language): CutData {
       suspense_out_of_10: null,
       pressure_out_of_10: null,
     },
-    alternatives: [{ match_id: "md34-09", value: 1.85 }],
+    chosen: { match_id: "md34-03", value: 1.31, drama: 0.46, stake: 0.8, reasons: ["rival:oakbridge", "stakes:title_race"] },
+    alternatives: [{ match_id: "md34-09", value: 1.85, drama: 0.41, stake: 2.3, reasons: ["your_club", "stakes:title_race"] }],
     value: 1.31,
   };
 }
