@@ -1,20 +1,125 @@
 @import "tailwindcss";
-
-/* Placeholder palette. The full "Midnight to Morning" token set lands with the design system. */
-:root {
-  --ink-950: #0b1020;
-  --moon-50: #f4f1ea;
-}
+@import "./tokens.css"; /* generated from src/design/tokens.ts */
 
 @theme inline {
-  --color-ink-950: var(--ink-950);
-  --color-moon-50: var(--moon-50);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-bg: var(--bg);
+  --color-bg-elevated: var(--bg-elevated);
+  --color-fg: var(--fg);
+  --color-fg-muted: var(--fg-muted);
+  --color-fg-faint: var(--fg-faint);
+  --color-hairline: var(--hairline);
+  --color-on-card: var(--on-card);
+  --color-on-card-muted: var(--on-card-muted);
+  --color-live: var(--live);
+  --color-focus: var(--focus);
+
+  --radius-card: var(--radius-card);
+  --radius-panel: var(--radius-panel);
+  --radius-control: var(--radius-control);
+  --radius-chip: var(--radius-chip);
+
+  --font-sans: var(--font-inter), var(--font-devanagari), system-ui, sans-serif;
+  --font-devanagari: var(--font-devanagari), var(--font-inter), system-ui, sans-serif;
 }
 
 body {
-  background: var(--ink-950);
-  color: var(--moon-50);
-  font-family: var(--font-geist-sans), system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-sans);
+  font-optical-sizing: auto;
+  font-feature-settings: "cv11", "ss01"; /* Inter: single-storey a, open digits */
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Keyboard focus is always visible; pointer focus never draws a ring. */
+:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+/* A horizontal strip scrolls without a visible bar. */
+.no-scrollbar {
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* Numbers line up in columns and never jitter as they change. */
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+/*
+ * A card with a lit surface: the `.silk` layer at the back, a fine grain over it (breaks
+ * gradient banding and gives the colour a material to sit on), content on top.
+ */
+.grain {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+}
+.silk {
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  pointer-events: none;
+}
+.silk-image {
+  position: absolute;
+  inset: 0;
+  background-size: 100% 100%;
+  animation: silk-in var(--t-base) var(--ease) both;
+}
+@keyframes silk-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+.grain::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0.14;
+  mix-blend-mode: soft-light;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 1 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 160px 160px;
+}
+
+/* Feedback lives on the press and is instant. */
+.pressable {
+  transition: transform 100ms ease-out;
+}
+.pressable:active {
+  transform: scale(0.97);
+}
+
+@keyframes live-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+.live-dot {
+  animation: live-pulse 1.6s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .live-dot {
+    animation: none;
+  }
+  .pressable,
+  .silk-image {
+    transition: none;
+    animation: none;
+  }
 }
