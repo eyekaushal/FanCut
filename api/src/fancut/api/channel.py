@@ -15,10 +15,12 @@ from typing import Any
 
 from fancut.agents.commentary import Commentary, Narration
 from fancut.agents.facts import CutFacts, facts_for
-from fancut.agents.templates import narrate_cut
+from fancut.agents.recap import RecapFacts, recap_facts
+from fancut.agents.templates import narrate_cut, narrate_recap
 from fancut.api.overlay import Overlay, OverlayType, ScoreLine, TableLine
 from fancut.director.director import Decision, Director
 from fancut.director.relevance import Relevance, relevance
+from fancut.insights import PlayerLedger
 from fancut.matchday.matchday import Matchday
 from fancut.matchday.state import MatchdayState, Update
 from fancut.profile import FanProfile, Language
@@ -64,6 +66,23 @@ class ChannelSession:
         self._t = 0.0
         self.focus: str | None = None
         self._focus_changed = False
+        self._final: tuple[MatchdayState, Director] | None = None
+        self._recap: tuple[RecapFacts, str, Narration] | None = None
+
+    @property
+    def ended(self) -> bool:
+        return self._final is not None
+
+    async def recap(self) -> tuple[RecapFacts, str, Narration]:
+        """The fan's matchday in a few sentences; built once, at full time."""
+        assert self._final is not None, "the matchday has not ended"
+        if self._recap is None:
+            state, director = self._final
+            facts = recap_facts(self.profile, state, director)
+            reference = narrate_recap(facts, self.language)
+            line = await self._commentary.recap(facts, reference, self.language, self.profile.depth)
+            self._recap = (facts, reference, line)
+        return self._recap
 
     def set_focus(self, match_id: str | None) -> None:
         """Lock the pitch to ``match_id``, or release it with ``None``."""
@@ -73,6 +92,7 @@ class ChannelSession:
     async def overlays(self) -> AsyncIterator[Overlay]:
         state = MatchdayState(self._matchday)
         director = Director(self.profile)
+        ledger = PlayerLedger(state.players)
         narrations: asyncio.Queue[tuple[int, Narration]] = asyncio.Queue()
         pending: set[asyncio.Task[None]] = set()
         next_scoreboard = 0.0
@@ -83,6 +103,7 @@ class ChannelSession:
                 break
             self._t = event.t
             update = state.update(event)
+            ledger.update(event)
             for decision in director.observe(update, state):
                 yield self._cut(
                     decision, facts_for(decision, state, self.profile), pending, narrations
@@ -90,6 +111,7 @@ class ChannelSession:
             if self._focus_changed:
                 self._focus_changed = False
                 yield self._focus_overlay(state)
+                yield self._players(state, ledger, director)
             for extra in self._extras(update, state, director):
                 yield extra
             if event.t >= next_scoreboard:
@@ -97,6 +119,7 @@ class ChannelSession:
                 yield self._overlay(OverlayType.SCOREBOARD, self._scoreboard(state, director))
                 if self.focus is not None:  # the focused match's standing moves with the play
                     yield self._focus_overlay(state)
+                yield self._players(state, ledger, director)
             while not narrations.empty():
                 yield self._narration(*narrations.get_nowait())
 
@@ -105,6 +128,7 @@ class ChannelSession:
         while not narrations.empty():
             yield self._narration(*narrations.get_nowait())
         yield self._overlay(OverlayType.SCOREBOARD, self._scoreboard(state, director))
+        self._final = (state, director)
         yield self._overlay(OverlayType.END, {})
 
     # -- events ----------------------------------------------------------------------
@@ -150,6 +174,15 @@ class ChannelSession:
                 "alternatives": [_ranked(a) for a in decision.alternatives],
                 "value": round(decision.chosen.value, 3),
             },
+        )
+
+    def _players(self, state: MatchdayState, ledger: PlayerLedger, director: Director) -> Overlay:
+        """Everyone on the pitch in the match shown, with their numbers so far."""
+        shown = self.focus or director.on_air
+        on_pitch = sorted(state.feeds[shown].on_pitch) if shown else []
+        return self._overlay(
+            OverlayType.PLAYERS,
+            {"match_id": shown, "players": [ledger.stats(p).model_dump() for p in on_pitch]},
         )
 
     def _focus_overlay(self, state: MatchdayState) -> Overlay:

@@ -9,6 +9,7 @@ import type {
   FantasyData,
   NarrationData,
   Overlay,
+  PlayersData,
   RankedMatch,
   ScoreLine,
   TableLine,
@@ -33,6 +34,8 @@ export type ChannelState = {
   focus: string | null;
   /** The Director's latest ranking of the focused match, refreshed as the matchday moves. */
   focusRanking: RankedMatch | null;
+  /** Per-player numbers for the match on screen, refreshed with the scoreboard. */
+  players: PlayersData | null;
   /** Matchday seconds of the latest event. */
   t: number;
   seq: number;
@@ -49,6 +52,7 @@ export const initialState: ChannelState = {
   actions: [],
   focus: null,
   focusRanking: null,
+  players: null,
   t: 0,
   seq: 0,
   ended: false,
@@ -74,6 +78,8 @@ export function applyOverlay(state: ChannelState, overlay: Overlay): ChannelStat
       return { ...next, fantasy: overlay.data };
     case "focus":
       return { ...next, focus: overlay.data.match_id, focusRanking: overlay.data.ranking };
+    case "players":
+      return { ...next, players: overlay.data };
     case "end":
       return { ...next, ended: true };
   }
@@ -110,4 +116,10 @@ export function rankingOf(state: ChannelState, matchId: string): RankedMatch | n
   if (!state.cut) return null;
   if (state.cut.chosen.match_id === matchId) return state.cut.chosen;
   return state.cut.alternatives.find((a) => a.match_id === matchId) ?? null;
+}
+
+/** The players' numbers, if they are for the match on screen. */
+export function playersShown(state: ChannelState): PlayersData | null {
+  const shown = state.focus ?? state.cut?.match_id;
+  return state.players && state.players.match_id === shown ? state.players : null;
 }

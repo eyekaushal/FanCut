@@ -6,6 +6,7 @@ languages, as Indian sports apps commonly write them, which also lets code verif
 """
 
 from fancut.agents.facts import CutFacts
+from fancut.agents.recap import RecapFacts
 from fancut.profile import Language
 
 EN, HI, HINGLISH = Language.ENGLISH, Language.HINDI, Language.HINGLISH
@@ -97,3 +98,62 @@ def _reason(facts: CutFacts, language: Language) -> str:
     if facts.match_stakes in _WHY:
         return _WHY[facts.match_stakes][language]
     return _WHY["heating_up"][language]
+
+
+# -- the recap ---------------------------------------------------------------------
+
+_RECAP_CLUB = {
+    EN: "Your club {club} finished {mine}-{theirs} against {opp} and ends the day {pos} in the table (it started {start}).",
+    HI: "आपका क्लब {club} {opp} के ख़िलाफ़ {mine}-{theirs} पर रहा और दिन के अंत में तालिका में {pos} नंबर पर है (शुरुआत {start} पर)।",
+    HINGLISH: "Aapka club {club} {opp} ke khilaaf {mine}-{theirs} par raha aur din ke ant mein table mein {pos} number par hai (shuruaat {start} par).",
+}  # fmt: skip
+_RECAP_NEUTRAL = {
+    EN: "The most dramatic match of the day was {home} {h}-{a} {away}.",
+    HI: "दिन का सबसे नाटकीय मैच {home} {h}-{a} {away} रहा।",
+    HINGLISH: "Din ka sabse dramatic match {home} {h}-{a} {away} raha.",
+}  # fmt: skip
+_RECAP_ANALYST = {
+    EN: " Its excitement rated {x}/10.",
+    HI: " इसका रोमांच {x}/10 रहा।",
+    HINGLISH: " Iska excitement {x}/10 raha.",
+}
+_RECAP_CHANNEL = {
+    EN: " Your channel cut {cuts} times across {matches} matches and replayed {replays} moments.",
+    HI: " आपके चैनल ने {matches} मैचों में {cuts} बार कट किया और {replays} पल रीप्ले किए।",
+    HINGLISH: " Aapke channel ne {matches} matches mein {cuts} baar cut kiya aur {replays} pal replay kiye.",
+}  # fmt: skip
+_RECAP_FANTASY = {
+    EN: " Your fantasy squad scored {total} points; {best} led with {pts}.",
+    HI: " आपकी फ़ैंटेसी टीम ने {total} अंक बनाए; {best} ने {pts} के साथ सबसे ज़्यादा।",
+    HINGLISH: " Aapki fantasy team ne {total} points banaye; {best} ne {pts} ke saath sabse zyada.",
+}  # fmt: skip
+
+
+def narrate_recap(facts: RecapFacts, language: Language) -> str:
+    """The reference recap: correct, plain, and every number from the fact sheet."""
+    if facts.fan_club:
+        text = _RECAP_CLUB[language].format(
+            club=facts.fan_club,
+            opp=facts.fan_club_opponent,
+            mine=facts.fan_club_goals,
+            theirs=facts.fan_club_opponent_goals,
+            pos=facts.fan_club_position_now,
+            start=facts.fan_club_position_at_kickoff,
+        )
+    else:
+        text = _RECAP_NEUTRAL[language].format(
+            home=facts.most_dramatic_home_team,
+            away=facts.most_dramatic_away_team,
+            h=facts.most_dramatic_home_goals,
+            a=facts.most_dramatic_away_goals,
+        )
+        if facts.most_dramatic_excitement_out_of_10 is not None:
+            text += _RECAP_ANALYST[language].format(x=facts.most_dramatic_excitement_out_of_10)
+    text += _RECAP_CHANNEL[language].format(
+        cuts=facts.cuts, matches=facts.matches_shown, replays=facts.replays
+    )
+    if facts.fantasy_total is not None:
+        text += _RECAP_FANTASY[language].format(
+            total=facts.fantasy_total, best=facts.fantasy_best_player, pts=facts.fantasy_best_points
+        )
+    return text

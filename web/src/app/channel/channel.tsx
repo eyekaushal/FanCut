@@ -2,29 +2,26 @@
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { FantasyPanel } from "@/components/ui/fantasy-panel";
-import { FocusCard } from "@/components/ui/focus-card";
 import { LanguageSwitch } from "@/components/ui/language-switch";
 import { LeagueTable } from "@/components/ui/league-table";
-import { MatchCard } from "@/components/ui/match-card";
 import { Panel } from "@/components/ui/panel";
 import { Pill } from "@/components/ui/pill";
 import { Pitch } from "@/components/ui/pitch";
-import { ReasonCard } from "@/components/ui/reason-card";
+import { PlayerCam } from "@/components/ui/player-cam";
+import { RecapCard } from "@/components/ui/recap-card";
 import { ScoreStrip } from "@/components/ui/score-strip";
-import { api, type FanProfile, type Matchday } from "@/lib/api";
-import { actionsShown, matchOnAir, matchShown, narrationOnAir, rankingOf } from "@/lib/channel-state";
-import { LANGUAGES, t, type Language } from "@/lib/i18n";
-import { useChannel } from "@/lib/use-channel";
+import { Stage } from "@/components/ui/stage";
+import { api, type Recap } from "@/lib/api";
+import { actionsShown, matchShown, narrationOnAir, playersShown } from "@/lib/channel-state";
+import { t, type Language } from "@/lib/i18n";
+import { useFanChannel } from "@/lib/use-fan-channel";
+import { useVoice } from "@/lib/use-voice";
 
 const DEFAULT_SPEED = 30; // match seconds per wall second: a matchday in about three minutes
-
-function isLanguage(value: string | null): value is Language {
-  return LANGUAGES.some((l) => l.id === value);
-}
 
 /**
  * One fan's channel. `?profile=` is a profile id (the demo fans are `arjun` and `maya`),
@@ -36,53 +33,34 @@ export function Channel() {
   const router = useRouter();
   const profileId = params.get("profile") ?? "arjun";
   const speed = Number(params.get("speed")) || DEFAULT_SPEED;
-  const requestedLang = params.get("lang");
-
-  const [profile, setProfile] = useState<FanProfile | null>(null);
-  const [matchday, setMatchday] = useState<Matchday | null>(null);
-  const [channelId, setChannelId] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const lang: Language = isLanguage(requestedLang) ? requestedLang : (profile?.language ?? "en");
-
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const [profiles, md] = await Promise.all([api.demoProfiles(), api.matchday()]);
-        if (cancelled) return;
-        setMatchday(md);
-        setProfile(profiles[profileId] ?? null);
-        const created = await api.createChannel({
-          profile_id: profileId,
-          language: isLanguage(requestedLang) ? requestedLang : undefined,
-          speed,
-        });
-        if (!cancelled) setChannelId(created.channel_id);
-      } catch (e) {
-        if (!cancelled) setError(e instanceof Error ? e.message : String(e));
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [profileId, requestedLang, speed]);
-
-  const { state, connection } = useChannel(channelId);
-  const onAir = matchOnAir(state);
+  const channel = useFanChannel(profileId, params.get("lang"), speed);
+  const { profile, state, connection, lang, fanClub, fanPosition, colors, error, setFocus, channelId } = channel;
   const shown = matchShown(state);
-  const focused = state.focus !== null;
+  const recap = useRecap(channelId, state.ended);
+  const players = playersShown(state);
+  // The cam remembers which match it was picked for; a new match on screen lets it go.
+  const [camPick, setCamPick] = useState<{ match: string | null; name: string | null }>({ match: null, name: null });
+  const shownId = shown?.match_id ?? null;
+  const cam = camPick.match === shownId ? camPick.name : null;
+  const setCam = (name: string | null) => setCamPick({ match: shownId, name });
+  const { voice, toggle: toggleVoice, say } = useVoice(lang);
+
+  // Speak each decision once: the Narrator's line when it lands, else the reference line
+  // after a short grace so a fast model is not talked over by the template.
+  const narration = narrationOnAir(state);
+  const cut = state.cut;
+  useEffect(() => {
+    if (!cut) return;
+    if (narration) return say(narration.text, `n${narration.decision_id}`);
+    const timer = setTimeout(() => say(cut.text, `n${cut.decision_id}`), 4000);
+    return () => clearTimeout(timer);
+  }, [cut, narration, say]);
+  useEffect(() => {
+    if (recap) say(recap.text, "recap");
+  }, [recap, say]);
 
   // Focus: tap a match in the strip to lock the pitch to it; tap again, or the button, to release.
-  const setFocus = (matchId: string | null) => {
-    if (channelId) void api.setFocus(channelId, matchId).catch(() => undefined);
-  };
   const toggleFocus = (matchId: string) => setFocus(state.focus === matchId ? null : matchId);
-  const colors = useMemo(() => (matchday ? api.clubColors(matchday) : {}), [matchday]);
-  const fanClub = useMemo(
-    () => matchday?.fixtures.flatMap((f) => [f.home, f.away]).find((c) => c.id === profile?.club_id)?.name ?? null,
-    [matchday, profile]
-  );
-  const fanPosition = state.table.find((r) => r.team_id === profile?.club_id)?.position ?? null;
 
   const setLang = (next: Language) => {
     const q = new URLSearchParams(params);
@@ -100,7 +78,14 @@ export function Channel() {
           {profile && <span className="t-caption text-fg-muted">{profile.name}</span>}
           <ConnectionPill connection={connection} ended={state.ended} lang={lang} />
         </div>
-        <LanguageSwitch value={lang} onChange={setLang} />
+        <div className="flex items-center gap-3">
+          {voice !== "unavailable" && (
+            <Button size="small" variant={voice === "on" ? "primary" : "secondary"} aria-pressed={voice === "on"} onClick={toggleVoice}>
+              {t(lang, "voice")}
+            </Button>
+          )}
+          <LanguageSwitch value={lang} onChange={setLang} />
+        </div>
       </header>
 
       {error && (
@@ -115,28 +100,13 @@ export function Channel() {
 
       <div className="grid gap-5 lg:grid-cols-[minmax(0,7fr)_minmax(280px,3fr)]">
         <div className="min-w-0 space-y-5">
-          {shown && state.cut ? (
-            <MatchCard match={shown} lang={lang} fanClub={fanClub} fanClubPosition={fanPosition} seed={cutSeed(shown.match_id)}>
-              {focused ? (
-                <FocusCard
-                  ranking={rankingOf(state, shown.match_id)}
-                  onAir={state.cut.chosen}
-                  onAirName={onAir ? `${onAir.home} ${onAir.home_goals}–${onAir.away_goals} ${onAir.away}` : null}
-                  lang={lang}
-                  onRelease={() => setFocus(null)}
-                />
-              ) : (
-                <ReasonCard cut={state.cut} narration={narrationOnAir(state)} lang={lang} />
-              )}
-            </MatchCard>
-          ) : (
-            <div className="grain h-[320px] animate-pulse rounded-card bg-bg-elevated" aria-busy />
-          )}
+          {recap && <RecapCard recap={recap} lang={lang} />}
+          <Stage state={state} lang={lang} fanClub={fanClub} fanPosition={fanPosition} onRelease={() => setFocus(null)} />
 
           <div className="rounded-panel border border-hairline bg-bg-elevated p-3 sm:p-4">
             <div className="aspect-[105/68] w-full">
               {shown ? (
-                <Pitch actions={actionsShown(state)} homeColor={shown.home_color} awayColor={shown.away_color} />
+                <Pitch actions={actionsShown(state)} homeColor={shown.home_color} awayColor={shown.away_color} highlight={cam} />
               ) : null}
             </div>
             {shown && (
@@ -145,21 +115,23 @@ export function Channel() {
                 <span>← {shown.away}</span>
               </div>
             )}
+            {players && (
+              <div className="mt-4 border-t border-hairline pt-4">
+                <PlayerCam players={players.players} selected={cam} onSelect={setCam} lang={lang} />
+              </div>
+            )}
           </div>
 
           {state.matches.length > 0 && (
-            <ScoreStrip
-              matches={state.matches}
-              lang={lang}
-              fanClub={fanClub}
-              selected={shown?.match_id}
-              onSelect={toggleFocus}
-            />
+            <ScoreStrip matches={state.matches} lang={lang} fanClub={fanClub} selected={shown?.match_id} onSelect={toggleFocus} />
           )}
         </div>
 
         <aside className="space-y-5">
-          <Panel title={t(lang, "asItStands")} aside={state.table[0] ? `${t(lang, "liveTable")} · ${state.table[0].played} ${t(lang, "played")}` : undefined}>
+          <Panel
+            title={t(lang, "asItStands")}
+            aside={state.table[0] ? `${t(lang, "liveTable")} · ${state.table[0].played} ${t(lang, "played")}` : undefined}
+          >
             {state.table.length ? (
               <LeagueTable rows={state.table} lang={lang} fanClubId={profile?.club_id} colors={colors} limit={8} compact />
             ) : (
@@ -191,7 +163,24 @@ export function Channel() {
   );
 }
 
-function ConnectionPill({ connection, ended, lang }: { connection: string; ended: boolean; lang: Language }) {
+/** The recap, fetched once the matchday has ended. */
+function useRecap(channelId: string | null, ended: boolean): Recap | null {
+  const [recap, setRecap] = useState<Recap | null>(null);
+  useEffect(() => {
+    if (!channelId || !ended) return;
+    let cancelled = false;
+    api
+      .recap(channelId)
+      .then((r) => !cancelled && setRecap(r))
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, [channelId, ended]);
+  return recap;
+}
+
+export function ConnectionPill({ connection, ended, lang }: { connection: string; ended: boolean; lang: Language }) {
   if (ended) return <Pill tone="neutral">{t(lang, "fullTime")}</Pill>;
   if (connection === "live") {
     return (
@@ -203,9 +192,4 @@ function ConnectionPill({ connection, ended, lang }: { connection: string; ended
   }
   if (connection === "lost") return <Pill tone="neutral">Reconnecting…</Pill>;
   return <Pill tone="neutral">Connecting…</Pill>;
-}
-
-/** The same match always gets the same silk; a cut to another match gets a new fold. */
-function cutSeed(matchId: string): number {
-  return Number(matchId.slice(-2)) || 0;
 }

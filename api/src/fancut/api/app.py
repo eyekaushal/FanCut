@@ -5,7 +5,7 @@ from collections.abc import AsyncGenerator, AsyncIterator
 from contextlib import asynccontextmanager
 from typing import Any
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.sse import EventSourceResponse, ServerSentEvent
 from mcp.server.transport_security import TransportSecuritySettings
@@ -13,9 +13,11 @@ from pydantic import BaseModel, Field
 
 from fancut import __version__
 from fancut.agents.profile_compiler import CompiledProfile, ProfileCompiler
+from fancut.agents.recap import RecapFacts
 from fancut.api.channel import ChannelSession
 from fancut.api.mcp import build_mcp
 from fancut.api.services import Services, build_services
+from fancut.api.speech import MEDIA_TYPE, Speech
 from fancut.config import Settings, get_settings
 from fancut.profile import FanProfile, Language
 from fancut.telemetry import setup_tracing
@@ -26,6 +28,7 @@ class Health(BaseModel):
     version: str
     environment: str
     model: bool  # a language model is configured
+    speech: bool  # Azure AI Speech is configured, so lines can be read aloud
 
 
 class CompileRequest(BaseModel):
@@ -54,10 +57,24 @@ class FocusRequest(BaseModel):
     match_id: str | None = None  # None releases the focus
 
 
+class SpeechRequest(BaseModel):
+    text: str = Field(min_length=1, max_length=700)
+    language: Language
+
+
+class Recap(BaseModel):
+    facts: RecapFacts
+    reference: str
+    text: str
+    source: str
+    language: Language
+
+
 def create_app(settings: Settings | None = None, services: Services | None = None) -> FastAPI:
     settings = settings or get_settings()
     services = services or build_services(settings)
     mcp = build_mcp(services)
+    speech = Speech(settings)
 
     @asynccontextmanager
     async def lifespan(_app: FastAPI) -> AsyncGenerator[None]:
@@ -84,6 +101,7 @@ def create_app(settings: Settings | None = None, services: Services | None = Non
             version=__version__,
             environment=settings.environment,
             model=services.model is not None,
+            speech=speech.configured,
         )
 
     @app.get("/matchday", tags=["matchday"])
@@ -175,6 +193,29 @@ def create_app(settings: Settings | None = None, services: Services | None = Non
             raise HTTPException(status_code=404, detail="unknown match")
         session.set_focus(request.match_id)
         return {"focus": session.focus}
+
+    @app.get("/channels/{channel_id}/recap", response_model=Recap, tags=["channel"])
+    async def recap(channel_id: str) -> Recap:
+        """The fan's matchday in a few sentences, once the matchday has ended."""
+        session = _session(services, channel_id)
+        if not session.ended:
+            raise HTTPException(status_code=409, detail="the matchday has not ended")
+        facts, reference, line = await session.recap()
+        return Recap(
+            facts=facts,
+            reference=reference,
+            text=line.text,
+            source=line.source.value,
+            language=line.language,
+        )
+
+    @app.post("/speech", tags=["channel"], responses={200: {"content": {MEDIA_TYPE: {}}}})
+    async def speak(request: SpeechRequest) -> Response:
+        """A fact-checked line read aloud in its language; 503 without Azure AI Speech."""
+        if not speech.configured:
+            raise HTTPException(status_code=503, detail="speech is not configured")
+        audio = await speech.speak(request.text, request.language)
+        return Response(content=audio, media_type=MEDIA_TYPE)
 
     @app.get("/channels/{channel_id}/audit", tags=["channel"])
     def audit(channel_id: str) -> list[dict[str, Any]]:
