@@ -1,0 +1,99 @@
+/* Generated from src/design/tokens.ts by `npm run tokens`. Do not edit by hand. */
+
+:root {
+  color-scheme: light dark;
+  --bg: oklch(0.97 0.004 260);
+  --bg-elevated: oklch(1 0 0);
+  --fg: oklch(0.17 0.01 260);
+  --fg-muted: oklch(0.45 0.015 260);
+  --fg-faint: oklch(0.56 0.012 260);
+  --hairline: oklch(0 0 0 / 0.08);
+  --on-card: oklch(1 0 0);
+  --on-card-muted: oklch(1 0 0 / 0.74);
+  --live: oklch(0.62 0.22 27);
+  --focus: oklch(0.55 0.18 262);
+
+  --radius-card: 22px;
+  --radius-panel: 18px;
+  --radius-control: 12px;
+  --radius-chip: 999px;
+
+  --t-fast: 180ms;
+  --t-base: 320ms;
+  --t-slow: 600ms;
+  --ease: cubic-bezier(0.2, 0, 0, 1);
+
+  --gutter: 16px;
+  --gutter-wide: 24px;
+  --page: 1120px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: oklch(0.14 0.008 260);
+    --bg-elevated: oklch(0.2 0.01 260);
+    --fg: oklch(0.96 0.004 260);
+    --fg-muted: oklch(0.72 0.012 260);
+    --fg-faint: oklch(0.58 0.012 260);
+    --hairline: oklch(1 0 0 / 0.1);
+    --on-card: oklch(1 0 0);
+    --on-card-muted: oklch(1 0 0 / 0.74);
+    --live: oklch(0.68 0.22 27);
+    --focus: oklch(0.75 0.14 262);
+  }
+}
+
+.t-display {
+  font-size: clamp(40px, 5.5vw, 68px);
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  line-height: 0.98;
+}
+.t-score {
+  font-size: clamp(64px, 11vw, 120px);
+  font-weight: 600;
+  letter-spacing: -0.04em;
+  line-height: 0.9;
+}
+.t-title1 {
+  font-size: 28px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1.12;
+}
+.t-title2 {
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  line-height: 1.2;
+}
+.t-headline {
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: -0.005em;
+  line-height: 1.35;
+}
+.t-body {
+  font-size: 17px;
+  font-weight: 400;
+  letter-spacing: 0;
+  line-height: 1.5;
+}
+.t-callout {
+  font-size: 15px;
+  font-weight: 400;
+  letter-spacing: 0;
+  line-height: 1.45;
+}
+.t-caption {
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  line-height: 1.4;
+}
+.t-micro {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  line-height: 1.3;
+}

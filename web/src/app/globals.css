@@ -1,36 +1,5 @@
 @import "tailwindcss";
-
-/*
- * Tokens. Surfaces are neutral so that the only colour on screen belongs to a club.
- * Values are OKLCH so light and dark stay perceptually matched.
- */
-:root {
-  color-scheme: light dark;
-
-  --bg: oklch(0.97 0.004 260);
-  --bg-elevated: oklch(1 0 0);
-  --fg: oklch(0.17 0.01 260);
-  --fg-muted: oklch(0.47 0.015 260);
-  --fg-faint: oklch(0.62 0.012 260);
-  --hairline: oklch(0 0 0 / 0.08);
-  --on-card: oklch(1 0 0);
-  --on-card-muted: oklch(1 0 0 / 0.74);
-  --live: oklch(0.68 0.22 27);
-
-  --radius-card: 22px;
-  --radius-chip: 999px;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: oklch(0.14 0.008 260);
-    --bg-elevated: oklch(0.2 0.01 260);
-    --fg: oklch(0.96 0.004 260);
-    --fg-muted: oklch(0.7 0.012 260);
-    --fg-faint: oklch(0.52 0.012 260);
-    --hairline: oklch(1 0 0 / 0.1);
-  }
-}
+@import "./tokens.css"; /* generated from src/design/tokens.ts */
 
 @theme inline {
   --color-bg: var(--bg);
@@ -42,6 +11,12 @@
   --color-on-card: var(--on-card);
   --color-on-card-muted: var(--on-card-muted);
   --color-live: var(--live);
+  --color-focus: var(--focus);
+
+  --radius-card: var(--radius-card);
+  --radius-panel: var(--radius-panel);
+  --radius-control: var(--radius-control);
+  --radius-chip: var(--radius-chip);
 
   --font-sans: var(--font-inter), var(--font-devanagari), system-ui, sans-serif;
   --font-devanagari: var(--font-devanagari), var(--font-inter), system-ui, sans-serif;
@@ -56,22 +31,23 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+/* Keyboard focus is always visible; pointer focus never draws a ring. */
+:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+/* A horizontal strip scrolls without a visible bar. */
+.no-scrollbar {
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
 /* Numbers line up in columns and never jitter as they change. */
 .tabular {
   font-variant-numeric: tabular-nums;
-}
-
-/* Display sizes tighten; body stays at zero. Tracking is size-specific, never one value. */
-.display {
-  letter-spacing: -0.03em;
-  line-height: 0.95;
-}
-.title {
-  letter-spacing: -0.02em;
-  line-height: 1.1;
-}
-.caption {
-  letter-spacing: 0.01em;
 }
 
 /*
@@ -93,7 +69,7 @@ body {
   position: absolute;
   inset: 0;
   background-size: 100% 100%;
-  animation: silk-in 400ms ease-out both;
+  animation: silk-in var(--t-base) var(--ease) both;
 }
 @keyframes silk-in {
   from {
@@ -141,7 +117,9 @@ body {
   .live-dot {
     animation: none;
   }
-  .pressable {
+  .pressable,
+  .silk-image {
     transition: none;
+    animation: none;
   }
 }

@@ -4,6 +4,7 @@
  * context renders every card to a static image, so the page pays nothing per frame.
  */
 
+import { clubSurface } from "@/design/tokens";
 import { hexToOklch, oklchToLinearRgb, type Oklch } from "@/lib/color";
 
 const MAX_PIXEL_RATIO = 2;
@@ -21,6 +22,8 @@ uniform vec3 u_home;
 uniform vec3 u_away;
 uniform float u_seed;
 uniform float u_detail;
+uniform float u_peak;
+uniform float u_white;
 
 vec3 mod289(vec3 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
 vec2 mod289(vec2 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
@@ -87,9 +90,11 @@ void main() {
   light += 0.16 * exp(-length(uv - vec2(0.94, 0.92)) * 1.8) * t;
   light += 0.06 * (1.0 - uv.y);
 
-  // Highlights go towards white rather than clipping per channel, which would shift hue.
+  // Crests are capped (the contrast audit depends on it) and go towards white rather
+  // than clipping per channel, which would shift the hue.
+  light = min(light, u_peak);
   vec3 c = base * min(light, 1.0);
-  c = mix(c, vec3(1.0), max(light - 1.0, 0.0) * 0.22);
+  c = mix(c, vec3(1.0), (max(light - 1.0, 0.0) / max(u_peak - 1.0, 0.001)) * u_white);
   c += (hash(gl_FragCoord.xy) - 0.5) * 0.012; // grain against banding
   gl_FragColor = vec4(toSrgb(clamp(c, 0.0, 1.0)), 1.0);
 }
@@ -106,12 +111,10 @@ export type SilkSpec = {
   detail?: number;
 };
 
-// Deep enough for white text, vivid enough to be unmistakably the club.
-const CLUB_TONE = { l: 0.47, c: 0.15 };
-
+/** The club's hue at the surface tone the tokens define (deep enough for white text). */
 function clubRgb(hex: string): [number, number, number] {
   const { c, h }: Oklch = hexToOklch(hex);
-  return oklchToLinearRgb({ l: CLUB_TONE.l, c: Math.min(Math.max(c, 0.1), CLUB_TONE.c), h });
+  return oklchToLinearRgb({ l: clubSurface.l, c: Math.min(Math.max(c, 0.1), clubSurface.c), h });
 }
 
 class SilkRenderer {
@@ -149,7 +152,7 @@ class SilkRenderer {
     gl.vertexAttribPointer(position, 2, gl.FLOAT, false, 0, 0);
 
     this.uniforms = Object.fromEntries(
-      ["u_res", "u_home", "u_away", "u_seed", "u_detail"].map((name) => [
+      ["u_res", "u_home", "u_away", "u_seed", "u_detail", "u_peak", "u_white"].map((name) => [
         name,
         gl.getUniformLocation(program, name),
       ])
@@ -168,6 +171,8 @@ class SilkRenderer {
     gl.uniform3f(this.uniforms.u_away, ...clubRgb(away));
     gl.uniform1f(this.uniforms.u_seed, seed * 7.31);
     gl.uniform1f(this.uniforms.u_detail, detail);
+    gl.uniform1f(this.uniforms.u_peak, clubSurface.peakLight);
+    gl.uniform1f(this.uniforms.u_white, clubSurface.peakWhite);
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
     const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/png"));
     if (!blob) throw new Error("could not read the rendered surface");
