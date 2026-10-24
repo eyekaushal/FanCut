@@ -47,9 +47,11 @@ class Verdict(BaseModel):
     problems: list[str]
 
 
-def rule_problems(text: str, facts: Facts, language: Language) -> list[str]:
+def rule_problems(
+    text: str, facts: Facts, language: Language, max_chars: int = MAX_CHARS
+) -> list[str]:
     problems = []
-    if len(text) > MAX_CHARS:
+    if len(text) > max_chars:
         problems.append(f"too long ({len(text)} characters)")
     allowed = facts.numbers()
     for raw in _DIGITS.findall(text):
@@ -76,9 +78,16 @@ class FactChecker:
     def __init__(self, model: LanguageModel | None) -> None:
         self._model = model
 
-    async def check(self, text: str, reference: str, facts: Facts, language: Language) -> list[str]:
+    async def check(
+        self,
+        text: str,
+        reference: str,
+        facts: Facts,
+        language: Language,
+        max_chars: int = MAX_CHARS,
+    ) -> list[str]:
         """Problems found; an empty list means the text may go on air."""
-        problems = rule_problems(text, facts, language)
+        problems = rule_problems(text, facts, language, max_chars)
         if problems or self._model is None:
             return problems
         verdict = await self._model.structured(

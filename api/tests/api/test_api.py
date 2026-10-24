@@ -25,7 +25,13 @@ def _stream(client: TestClient, profile_id: str, until: int = 15) -> list[dict[s
 
 def test_health_reports_version_and_no_model_in_tests(client: TestClient) -> None:
     body = client.get("/health").json()
-    assert body == {"status": "ok", "version": __version__, "environment": "test", "model": False}
+    assert body == {
+        "status": "ok",
+        "version": __version__,
+        "environment": "test",
+        "model": False,
+        "speech": False,
+    }
 
 
 def test_matchday_lists_ten_fixtures_and_the_full_table(client: TestClient) -> None:
@@ -108,6 +114,39 @@ def test_focus_refuses_an_unknown_match_and_null_releases_it(client: TestClient)
     assert client.post(url, json={"match_id": "md99-01"}).status_code == 404
     assert client.post(url, json={"match_id": None}).json() == {"focus": None}
     assert client.post("/channels/nope/focus", json={"match_id": None}).status_code == 404
+
+
+def test_players_numbers_follow_the_match_on_screen(client: TestClient) -> None:
+    overlays = _stream(client, "arjun", until=20)
+    players = [o for o in overlays if o["type"] == "players"]
+    assert players, "the scoreboard tick carries the players' numbers"
+    shown = None
+    for overlay in overlays:
+        if overlay["type"] == "cut" and overlay["data"]["kind"] != "replay":
+            shown = overlay["data"]["match_id"]
+        elif overlay["type"] == "players":
+            assert overlay["data"]["match_id"] == shown
+            assert len(overlay["data"]["players"]) == 22
+    last = players[-1]["data"]["players"]
+    assert any(p["passes"] for p in last) and any(p["carries"] for p in last)
+    for p in last:
+        assert 0 <= p["pass_difficulty"] <= 1 and p["top_speed_mps"] <= 10.5
+        assert p["passes_completed"] <= p["passes"]
+
+
+def test_the_recap_waits_for_full_time_then_tells_the_fans_day(client: TestClient) -> None:
+    channel = client.post("/channels", json={"profile_id": "arjun", "speed": 600}).json()
+    url = f"/channels/{channel['channel_id']}/recap"
+    assert client.get(url).status_code == 409  # not yet
+    with client.stream("GET", channel["stream"]) as response:
+        for _ in response.iter_lines():
+            pass
+    recap = client.get(url).json()
+    assert recap["facts"]["fan_club"] == "Kingsmere City"
+    assert recap["source"] == "template" and recap["language"] == "hi"
+    assert "Kingsmere City" in recap["text"] and recap["text"] == recap["reference"]
+    assert client.get(url).json() == recap  # built once
+    assert client.get("/channels/nope/recap").status_code == 404
 
 
 def test_the_audit_trail_records_every_decision_with_its_evidence(client: TestClient) -> None:

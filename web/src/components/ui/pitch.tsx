@@ -14,6 +14,8 @@ type Props = {
   actions: ActionData[];
   homeColor: string;
   awayColor: string;
+  /** Player cam: this player's plays at full strength, everyone else's faded. */
+  highlight?: string | null;
   className?: string;
 };
 
@@ -24,10 +26,14 @@ type Timed = { action: ActionData; at: number };
  * recent plays of the match on air drawn in each club's colour, fading as they age.
  * Home attacks to the right. The loop runs only while something is still fading.
  */
-export function Pitch({ actions, homeColor, awayColor, className = "" }: Props) {
+export function Pitch({ actions, homeColor, awayColor, highlight = null, className = "" }: Props) {
   const canvas = useRef<HTMLCanvasElement>(null);
   const timed = useRef<Timed[]>([]);
   const seen = useRef<ActionData | null>(null);
+  const highlighted = useRef<string | null>(highlight);
+  useEffect(() => {
+    highlighted.current = highlight;
+  }, [highlight]);
 
   // Stamp each new action with its arrival time; the reducer keeps them in order.
   useEffect(() => {
@@ -75,7 +81,9 @@ export function Pitch({ actions, homeColor, awayColor, className = "" }: Props) 
       let anyAlive = false;
       for (const { action, at } of timed.current) {
         const age = (now - at) / FADE_MS;
-        const alpha = Math.max(0, 1 - age * age);
+        let alpha = Math.max(0, 1 - age * age);
+        const cam = highlighted.current;
+        if (cam && action.player !== cam) alpha *= 0.18;
         if (alpha <= 0) continue;
         anyAlive = true;
         drawAction(ctx, action, action.side === "away" ? away : home, alpha, X, Y, scale);

@@ -26,10 +26,10 @@ export default function Home() {
           Start my channel
         </Link>
         <Link
-          href="/design"
+          href="/split"
           className="pressable t-headline inline-flex h-11 items-center rounded-control bg-fg/8 px-5 text-fg"
         >
-          Design system
+          Two fans, side by side
         </Link>
       </div>
 
