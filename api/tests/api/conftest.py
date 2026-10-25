@@ -12,7 +12,9 @@ from fancut.matchday.matchday import Matchday
 @pytest.fixture(scope="session")
 def client(matchday: Matchday) -> Iterator[TestClient]:
     """One app for the whole session: no model, no .env, so tests never call Azure."""
-    settings = Settings(_env_file=None, environment="test", mcp_allowed_hosts=["testserver"])  # type: ignore[call-arg]
+    settings = Settings(  # type: ignore[call-arg]
+        _env_file=None, environment="test", mcp_allowed_hosts=["testserver"], evaluation_seeds=[34]
+    )
     app = create_app(settings, Services(matchday=matchday, model=None))
     with TestClient(app) as test_client:
         yield test_client

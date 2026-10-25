@@ -60,8 +60,12 @@ class Channel:
 
 class ChannelReport(BaseModel):
     personal_moments: int
+    personal_covered: int
     personal_coverage: float
     decisive_goals: int
+    live_goals: int  # decisive goals that were on air as they happened
+    live_goals_random: int
+    live_goals_never_switch: int
     live_coverage: float
     live_coverage_random: float
     live_coverage_never_switch: float
@@ -92,13 +96,20 @@ def report(matchday: Matchday, channel: Channel, seed: int = 7) -> ChannelReport
     decisive = _decisive_goals(matchday)
     first_pick = channel.timeline[0][1] if channel.timeline else None
     random_channel = _random_channel(matchday, seed)
+    live = _count(decisive, lambda m: channel.on_air_before.get(m) == m[0])
+    live_random = _count(decisive, lambda m: random_channel.get(m) == m[0])
+    live_never = _count(decisive, lambda m: first_pick == m[0])
     return ChannelReport(
         personal_moments=len(channel.must_show),
+        personal_covered=len(covered),
         personal_coverage=len(covered) / len(channel.must_show) if channel.must_show else 1.0,
         decisive_goals=len(decisive),
-        live_coverage=_share(decisive, lambda m: channel.on_air_before.get(m) == m[0]),
-        live_coverage_random=_share(decisive, lambda m: random_channel.get(m) == m[0]),
-        live_coverage_never_switch=_share(decisive, lambda m: first_pick == m[0]),
+        live_goals=live,
+        live_goals_random=live_random,
+        live_goals_never_switch=live_never,
+        live_coverage=_ratio(live, len(decisive)),
+        live_coverage_random=_ratio(live_random, len(decisive)),
+        live_coverage_never_switch=_ratio(live_never, len(decisive)),
         cuts=sum(d.kind is Kind.CUT for d in channel.decisions),
         replays=len(channel.replays),
         early_cuts=_early_cuts(channel.decisions),
@@ -141,8 +152,12 @@ def _decisive_goals(matchday: Matchday) -> list[Moment]:
     return moments
 
 
-def _share(moments: list[Moment], seen: Seen) -> float:
-    return sum(seen(m) for m in moments) / len(moments) if moments else 0.0
+def _count(moments: list[Moment], seen: Seen) -> int:
+    return sum(seen(m) for m in moments)
+
+
+def _ratio(part: int, whole: int) -> float:
+    return part / whole if whole else 0.0
 
 
 def _random_channel(matchday: Matchday, seed: int) -> dict[Moment, str | None]:

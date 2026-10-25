@@ -1,5 +1,6 @@
 import asyncio
 import json
+import time
 from typing import Any
 
 from fastapi.testclient import TestClient
@@ -157,10 +158,51 @@ def test_the_audit_trail_records_every_decision_with_its_evidence(client: TestCl
         for _ in response.iter_lines():
             pass
     audit = client.get(channel["audit"]).json()
-    assert audit
-    for entry in audit:
-        assert {"decision", "facts", "reference", "narration"} <= entry.keys()
-        assert entry["decision"]["chosen"]["match_id"] == entry["decision"]["match_id"]
+    assert audit["schema_version"] == "audit.v1" and audit["fan"] == "Maya" and audit["ended"]
+    assert audit["model_deployment"] is None  # templates spoke: no model in tests
+    assert audit["director"]["min_dwell_s"] == 45.0
+    assert audit["decisions"]
+    for i, entry in enumerate(audit["decisions"]):
+        assert entry["decision_id"] == i
+        assert entry["chosen"]["match_id"] == entry["match_id"]
+        assert entry["facts"]["home_team"] and entry["reference"]
+        assert entry["narration"]["source"] == "template"
+        assert entry["narration"]["rejected"] == []
+    assert (
+        audit["decisions"][0]["kind"] == "open"
+        and audit["decisions"][0]["previous_match_id"] is None
+    )
+
+
+def test_the_overlay_contract_documents_every_event_type(client: TestClient) -> None:
+    body = client.get("/contract/overlay.v1").json()
+    assert body["schema_version"] == "overlay.v1"
+    assert body["envelope"]["required"] == ["seq", "t", "type", "data"]
+    assert [e["type"] for e in body["events"]] == [
+        "cut", "narration", "action", "scoreboard", "table", "fantasy", "focus", "players", "end",
+    ]  # fmt: skip
+    assert all(e["description"] for e in body["events"])
+
+
+def test_the_evaluation_measures_the_director_and_tallies_the_fact_checker(
+    client: TestClient,
+) -> None:
+    first = client.get("/evaluation").json()
+    assert first["status"] in ("measuring", "ready")
+    assert first["grounding"]["review"]["false_claims"] == 0
+    assert first["grounding"]["live"]["channels"] >= 1  # earlier tests ran channels
+    assert first["grounding"]["live"]["template"] == first["grounding"]["live"]["lines"]
+    assert first["safety"]["model_deployment"] is None and first["safety"]["controls"]
+
+    deadline = time.monotonic() + 60
+    while (body := client.get("/evaluation").json())["status"] != "ready":
+        assert time.monotonic() < deadline, "the measurement did not finish"
+        time.sleep(0.2)
+    director = body["director"]
+    assert director["seeds"] == [34] and director["fans"] == ["Arjun", "Maya"]
+    assert director["personal_coverage"] == 1.0 and director["early_cuts"] == 0
+    assert director["decisive_goals"] > 0 and director["distinctness_min"] >= 0.5
+    assert len(director["per_matchday"]) == 2 and body["progress"] == {"done": 1, "total": 1}
 
 
 def test_unknown_profiles_and_channels_are_404s(client: TestClient) -> None:
