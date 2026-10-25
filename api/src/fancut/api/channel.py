@@ -173,6 +173,11 @@ class ChannelSession:
     ) -> Overlay:
         decision_id = len(self.audit)
         reference = narrate_cut(facts, self.language)
+        # Hinglish is read aloud as Hindi: a Hindi voice reading Latin-script Hindi, or an
+        # English voice reading it, both stumble. The spoken line is the Hindi reference.
+        voice_text = (
+            narrate_cut(facts, Language.HINDI) if self.language is Language.HINGLISH else None
+        )
         chosen = _ranked(decision.chosen)
         alternatives = [_ranked(a) for a in decision.alternatives]
         self.audit.append(
@@ -211,6 +216,7 @@ class ChannelSession:
                 "match_id": decision.match_id,
                 "text": reference,
                 "language": self.language.value,
+                "voice_text": voice_text,
                 "facts": facts.model_dump(),
                 "chosen": chosen.model_dump(),
                 "alternatives": [a.model_dump() for a in alternatives],

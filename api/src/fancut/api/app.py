@@ -14,6 +14,7 @@ from pydantic import BaseModel, Field
 from fancut import __version__
 from fancut.agents.profile_compiler import CompiledProfile, ProfileCompiler
 from fancut.agents.recap import RecapFacts
+from fancut.agents.templates import narrate_recap
 from fancut.api.channel import AuditEntry, ChannelSession
 from fancut.api.mcp import build_mcp
 from fancut.api.overlay import contract
@@ -80,6 +81,7 @@ class Recap(BaseModel):
     text: str
     source: str
     language: Language
+    voice_text: str | None = None  # the Hindi line to read aloud on a Hinglish channel
 
 
 class AuditTrail(BaseModel):
@@ -179,6 +181,14 @@ def create_app(settings: Settings | None = None, services: Services | None = Non
     def add_profile(profile: FanProfile) -> dict[str, str]:
         return {"profile_id": services.profiles.add(profile)}
 
+    @app.get("/profiles/{profile_id}", response_model=FanProfile, tags=["profiles"])
+    def get_profile(profile_id: str) -> FanProfile:
+        """Any profile by id: a demo fan or one the Profile Compiler made."""
+        profile = services.profiles.get(profile_id)
+        if profile is None:
+            raise HTTPException(status_code=404, detail="unknown profile")
+        return profile
+
     @app.post("/profiles/compile", response_model=Compiled, tags=["profiles"])
     async def compile_profile(request: CompileRequest) -> Compiled:
         compiled = await ProfileCompiler(services.model).compile(request.message)
@@ -229,12 +239,14 @@ def create_app(settings: Settings | None = None, services: Services | None = Non
         if not session.ended:
             raise HTTPException(status_code=409, detail="the matchday has not ended")
         facts, reference, line = await session.recap()
+        hinglish = session.language is Language.HINGLISH
         return Recap(
             facts=facts,
             reference=reference,
             text=line.text,
             source=line.source.value,
             language=line.language,
+            voice_text=narrate_recap(facts, Language.HINDI) if hinglish else None,
         )
 
     @app.post("/speech", tags=["channel"], responses={200: {"content": {MEDIA_TYPE: {}}}})

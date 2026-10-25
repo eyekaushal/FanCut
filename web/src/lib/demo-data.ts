@@ -58,6 +58,7 @@ export function cut(lang: Language): CutData {
     match_id: "md34-09",
     text: CUT_TEXT[lang],
     language: lang,
+    voice_text: lang === "hinglish" ? CUT_TEXT.hi : null,
     facts: {
       kind: "cut",
       minute: 24,
@@ -103,6 +104,7 @@ export function replay(lang: Language): CutData {
     match_id: "md34-03",
     text: REPLAY_TEXT[lang],
     language: lang,
+    voice_text: null,
     facts: {
       kind: "replay",
       minute: 24,

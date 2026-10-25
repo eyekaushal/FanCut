@@ -205,6 +205,36 @@ def test_the_evaluation_measures_the_director_and_tallies_the_fact_checker(
     assert len(director["per_matchday"]) == 2 and body["progress"] == {"done": 1, "total": 1}
 
 
+def test_a_compiled_profile_can_be_fetched_by_id(client: TestClient) -> None:
+    compiled = client.post(
+        "/profiles/compile", json={"message": "Oakbridge Town fan, Hinglish please"}
+    ).json()
+    profile = client.get(f"/profiles/{compiled['profile_id']}").json()
+    assert profile["club_id"] == "oakbridge" and profile["language"] == "hinglish"
+    assert client.get("/profiles/arjun").json()["name"] == "Arjun"
+    assert client.get("/profiles/nobody").status_code == 404
+
+
+def test_a_hinglish_channel_carries_a_hindi_line_to_read_aloud(client: TestClient) -> None:
+    channel = client.post(
+        "/channels",
+        json={"profile_id": "arjun", "language": "hinglish", "speed": 600, "until_minute": 3},
+    ).json()
+    overlays = []
+    with client.stream("GET", channel["stream"]) as response:
+        for line in response.iter_lines():
+            if line.startswith("data:"):
+                overlays.append(json.loads(line.removeprefix("data:")))
+    opening = overlays[0]["data"]
+    assert opening["language"] == "hinglish" and "aapka club" in opening["text"]
+    assert "आपका क्लब" in opening["voice_text"]
+    recap = client.get(f"/channels/{channel['channel_id']}/recap").json()
+    assert recap["language"] == "hinglish" and "क्लब" in recap["voice_text"]
+    # Other languages read their own line.
+    english = _stream(client, "maya", until=3)[0]["data"]
+    assert english["voice_text"] is None
+
+
 def test_unknown_profiles_and_channels_are_404s(client: TestClient) -> None:
     assert client.post("/channels", json={"profile_id": "nobody"}).status_code == 404
     assert client.get("/channels/nope/audit").status_code == 404

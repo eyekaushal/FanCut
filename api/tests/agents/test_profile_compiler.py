@@ -38,6 +38,14 @@ def test_language_falls_back_to_the_script_the_fan_wrote_in() -> None:
     assert resolve(ProfileDraft(), "I am a fan").profile.language is Language.ENGLISH
 
 
+def test_a_language_asked_for_by_name_wins_without_a_model() -> None:
+    assert (
+        resolve(ProfileDraft(), "Oakbridge fan, Hinglish please").profile.language
+        is Language.HINGLISH
+    )
+    assert resolve(ProfileDraft(), "Oakbridge fan, in Hindi").profile.language is Language.HINDI
+
+
 def test_readback_speaks_the_fans_language() -> None:
     profile = resolve(ProfileDraft(club="Thornwick United", language="hi"), "…").profile
     assert readback(profile).startswith("आप Thornwick United के फ़ैन हैं।")

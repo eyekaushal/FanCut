@@ -73,6 +73,7 @@ export type Recap = {
   text: string;
   source: "model" | "template";
   language: Language;
+  voice_text: string | null; // the Hindi line to read aloud on a Hinglish channel
 };
 
 /** The Narrator's line for a decision, with the Fact Checker's record of getting there. */
@@ -254,6 +255,8 @@ export const api = {
     request<{ status: string; version: string; environment: string; model: boolean; speech: boolean }>("/health"),
   matchday: () => request<Matchday>("/matchday"),
   demoProfiles: () => request<Record<string, FanProfile>>("/profiles/demo"),
+  /** Any profile by id: a demo fan or one the Profile Compiler made. */
+  profile: (profileId: string) => request<FanProfile>(`/profiles/${profileId}`),
   compileProfile: (message: string) =>
     request<{ profile_id: string; compiled: CompiledProfile }>("/profiles/compile", {
       method: "POST",

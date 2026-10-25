@@ -43,21 +43,25 @@ export function Channel() {
   const shownId = shown?.match_id ?? null;
   const cam = camPick.match === shownId ? camPick.name : null;
   const setCam = (name: string | null) => setCamPick({ match: shownId, name });
-  const { voice, toggle: toggleVoice, say } = useVoice(lang);
+  // Hinglish is read aloud as Hindi (the API sends the Hindi line as voice_text).
+  const { voice, toggle: toggleVoice, say } = useVoice(lang === "hinglish" ? "hi" : lang);
 
   // Speak each decision once: the Narrator's line when it lands, else the reference line
-  // after a short grace so a fast model is not talked over by the template.
+  // after a short grace so a fast model is not talked over by the template. Keys carry
+  // the channel id, so a new channel (new language) speaks from its first line.
   const narration = narrationOnAir(state);
   const cut = state.cut;
   useEffect(() => {
     if (!cut) return;
-    if (narration) return say(narration.text, `n${narration.decision_id}`);
-    const timer = setTimeout(() => say(cut.text, `n${cut.decision_id}`), 4000);
+    const key = `${channelId}:n${cut.decision_id}`;
+    if (cut.voice_text) return say(cut.voice_text, key);
+    if (narration) return say(narration.text, key);
+    const timer = setTimeout(() => say(cut.text, key), 4000);
     return () => clearTimeout(timer);
-  }, [cut, narration, say]);
+  }, [cut, narration, say, channelId]);
   useEffect(() => {
-    if (recap) say(recap.text, "recap");
-  }, [recap, say]);
+    if (recap) say(recap.voice_text ?? recap.text, `${channelId}:recap`);
+  }, [recap, say, channelId]);
 
   // Focus: tap a match in the strip to lock the pitch to it; tap again, or the button, to release.
   const toggleFocus = (matchId: string) => setFocus(state.focus === matchId ? null : matchId);
@@ -169,21 +173,21 @@ export function Channel() {
   );
 }
 
-/** The recap, fetched once the matchday has ended. */
+/** The recap, fetched once the matchday has ended; a new channel starts without one. */
 function useRecap(channelId: string | null, ended: boolean): Recap | null {
-  const [recap, setRecap] = useState<Recap | null>(null);
+  const [recap, setRecap] = useState<{ channelId: string; recap: Recap } | null>(null);
   useEffect(() => {
     if (!channelId || !ended) return;
     let cancelled = false;
     api
       .recap(channelId)
-      .then((r) => !cancelled && setRecap(r))
+      .then((r) => !cancelled && setRecap({ channelId, recap: r }))
       .catch(() => undefined);
     return () => {
       cancelled = true;
     };
   }, [channelId, ended]);
-  return recap;
+  return recap && recap.channelId === channelId ? recap.recap : null;
 }
 
 export function ConnectionPill({ connection, ended, lang }: { connection: string; ended: boolean; lang: Language }) {
