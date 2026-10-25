@@ -1,0 +1,26 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/Azure/azure-dev/main/schemas/v1.0/azure.yaml.json
+# Deploy with the Azure Developer CLI: `azd up` provisions infra/ and ships both containers.
+# See infra/README.md for the one-time setup (the Foundry key and the Speech key).
+name: fancut
+metadata:
+  template: fancut@0.1.0
+infra:
+  provider: bicep
+  path: infra
+services:
+  api:
+    project: ./api
+    language: python
+    host: containerapp
+    docker:
+      path: Dockerfile
+  web:
+    project: ./web
+    language: js
+    host: containerapp
+    docker:
+      path: Dockerfile
+      # The browser calls the API directly, so its public URL is fixed at build time.
+      # API_URL is an output of infra/main.bicep, known once the API app exists.
+      buildArgs:
+        - NEXT_PUBLIC_API_URL=${API_URL}
