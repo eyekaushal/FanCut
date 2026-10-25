@@ -18,7 +18,7 @@ import { Stage } from "@/components/ui/stage";
 import { api, type Recap } from "@/lib/api";
 import { actionsShown, matchShown, narrationOnAir, playersShown } from "@/lib/channel-state";
 import { t, type Language } from "@/lib/i18n";
-import { useFanChannel } from "@/lib/use-fan-channel";
+import { isLanguage, useFanChannel } from "@/lib/use-fan-channel";
 import { useVoice } from "@/lib/use-voice";
 
 const DEFAULT_SPEED = 30; // match seconds per wall second: a matchday in about three minutes
@@ -79,6 +79,12 @@ export function Channel() {
           <ConnectionPill connection={connection} ended={state.ended} lang={lang} />
         </div>
         <div className="flex items-center gap-3">
+          <Link
+            href={`/studio?profile=${profileId}${isLanguage(params.get("lang")) ? `&lang=${params.get("lang")}` : ""}`}
+            className="pressable t-caption hidden h-9 items-center rounded-control px-3 font-semibold text-fg-muted hover:bg-fg/6 hover:text-fg sm:inline-flex"
+          >
+            Studio
+          </Link>
           {voice !== "unavailable" && (
             <Button size="small" variant={voice === "on" ? "primary" : "secondary"} aria-pressed={voice === "on"} onClick={toggleVoice}>
               {t(lang, "voice")}

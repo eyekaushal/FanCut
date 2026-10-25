@@ -13,8 +13,10 @@ import asyncio
 from collections.abc import AsyncIterator
 from typing import Any
 
+from pydantic import BaseModel
+
 from fancut.agents.commentary import Commentary, Narration
-from fancut.agents.facts import CutFacts, facts_for
+from fancut.agents.facts import CutFacts, Moment, facts_for
 from fancut.agents.recap import RecapFacts, recap_facts
 from fancut.agents.templates import narrate_cut, narrate_recap
 from fancut.api.overlay import Overlay, OverlayType, ScoreLine, TableLine
@@ -45,6 +47,35 @@ VISIBLE_ACTIONS = {
 }
 
 
+class Ranked(BaseModel):
+    """A match's relevance with the evidence behind it, so a cut can explain itself."""
+
+    match_id: str
+    value: float
+    drama: float
+    stake: float
+    reasons: list[str]
+
+
+class AuditEntry(BaseModel):
+    """One Director decision as the audit trail records it: the evidence, the reference
+    line, and (once written) the Narrator's line with every rejected draft's reason."""
+
+    decision_id: int
+    t: float
+    minute: int
+    kind: str
+    trigger: str
+    match_id: str
+    previous_match_id: str | None
+    chosen: Ranked
+    alternatives: list[Ranked]
+    moment: Moment | None
+    facts: CutFacts
+    reference: str
+    narration: Narration | None = None
+
+
 class ChannelSession:
     def __init__(
         self,
@@ -57,7 +88,7 @@ class ChannelSession:
     ) -> None:
         self.profile = profile
         self.language = language or profile.language
-        self.audit: list[dict[str, Any]] = []
+        self.audit: list[AuditEntry] = []
         self._matchday = matchday
         self._commentary = commentary
         self._speed = speed
@@ -142,19 +173,30 @@ class ChannelSession:
     ) -> Overlay:
         decision_id = len(self.audit)
         reference = narrate_cut(facts, self.language)
+        chosen = _ranked(decision.chosen)
+        alternatives = [_ranked(a) for a in decision.alternatives]
         self.audit.append(
-            {
-                "decision": decision.model_dump(mode="json"),
-                "facts": facts.model_dump(),
-                "reference": reference,
-            }
+            AuditEntry(
+                decision_id=decision_id,
+                t=round(decision.t, 2),
+                minute=facts.minute,
+                kind=decision.kind.value,
+                trigger=decision.trigger.value,
+                match_id=decision.match_id,
+                previous_match_id=decision.previous_match_id,
+                chosen=chosen,
+                alternatives=alternatives,
+                moment=facts.moment,
+                facts=facts,
+                reference=reference,
+            )
         )
 
         async def narrate() -> None:
             line = await self._commentary.narrate(
                 facts, reference, self.language, self.profile.depth
             )
-            self.audit[decision_id]["narration"] = line.model_dump(mode="json")
+            self.audit[decision_id].narration = line
             await narrations.put((decision_id, line))
 
         task = asyncio.create_task(narrate())
@@ -170,8 +212,8 @@ class ChannelSession:
                 "text": reference,
                 "language": self.language.value,
                 "facts": facts.model_dump(),
-                "chosen": _ranked(decision.chosen),
-                "alternatives": [_ranked(a) for a in decision.alternatives],
+                "chosen": chosen.model_dump(),
+                "alternatives": [a.model_dump() for a in alternatives],
                 "value": round(decision.chosen.value, 3),
             },
         )
@@ -189,7 +231,7 @@ class ChannelSession:
         """The focus and, while one is set, the Director's current ranking of that match."""
         ranking = None
         if self.focus is not None:
-            ranking = _ranked(relevance(self.profile, state.feeds[self.focus], state))
+            ranking = _ranked(relevance(self.profile, state.feeds[self.focus], state)).model_dump()
         return self._overlay(OverlayType.FOCUS, {"match_id": self.focus, "ranking": ranking})
 
     def _narration(self, decision_id: int, line: Narration) -> Overlay:
@@ -292,12 +334,11 @@ class ChannelSession:
         return Overlay(seq=self._seq, t=round(self._t, 2), type=type_, data=data)
 
 
-def _ranked(relevance: Relevance) -> dict[str, Any]:
-    """A match's relevance with the evidence behind it, so a cut can explain itself."""
-    return {
-        "match_id": relevance.match_id,
-        "value": round(relevance.value, 3),
-        "drama": round(relevance.drama, 3),
-        "stake": round(relevance.stake, 3),
-        "reasons": list(relevance.reasons),
-    }
+def _ranked(relevance: Relevance) -> Ranked:
+    return Ranked(
+        match_id=relevance.match_id,
+        value=round(relevance.value, 3),
+        drama=round(relevance.drama, 3),
+        stake=round(relevance.stake, 3),
+        reasons=list(relevance.reasons),
+    )

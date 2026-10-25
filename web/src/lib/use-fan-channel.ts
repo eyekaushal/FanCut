@@ -6,6 +6,7 @@ import { api, type FanProfile, type Matchday } from "@/lib/api";
 import { LANGUAGES, type Language } from "@/lib/i18n";
 import { useChannel, type Connection } from "@/lib/use-channel";
 import type { ChannelState } from "@/lib/channel-state";
+import type { Overlay } from "@/lib/overlay";
 
 export function isLanguage(value: string | null | undefined): value is Language {
   return LANGUAGES.some((l) => l.id === value);
@@ -18,6 +19,8 @@ export type FanChannel = {
   error: string | null;
   state: ChannelState;
   connection: Connection;
+  /** The raw overlay.v1 stream as it arrived, most recent last (bounded). */
+  log: Overlay[];
   /** The narration language: requested, else the profile's. */
   lang: Language;
   fanClub: string | null;
@@ -61,7 +64,7 @@ export function useFanChannel(profileId: string, requestedLang: string | null, s
     };
   }, [profileId, requestedLang, speed]);
 
-  const { state, connection } = useChannel(channelId);
+  const { state, connection, log } = useChannel(channelId);
   const colors = useMemo(() => (matchday ? api.clubColors(matchday) : {}), [matchday]);
   const fanClub = useMemo(
     () => matchday?.fixtures.flatMap((f) => [f.home, f.away]).find((c) => c.id === profile?.club_id)?.name ?? null,
@@ -72,5 +75,5 @@ export function useFanChannel(profileId: string, requestedLang: string | null, s
     if (channelId) void api.setFocus(channelId, matchId).catch(() => undefined);
   };
 
-  return { profile, matchday, channelId, error, state, connection, lang, fanClub, fanPosition, colors, setFocus };
+  return { profile, matchday, channelId, error, state, connection, log, lang, fanClub, fanPosition, colors, setFocus };
 }

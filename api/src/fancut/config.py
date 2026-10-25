@@ -26,6 +26,9 @@ class Settings(BaseSettings):
     # Print agent traces to the console (Application Insights is configured in Azure).
     trace_console: bool = False
 
+    # Matchdays the Director is measured on when the Studio asks (``GET /evaluation``).
+    evaluation_seeds: list[int] = [34, 35, 36, 37, 38, 39]
+
     # Azure AI Speech (the Foundry resource's key and region also work here).
     speech_region: str | None = None
     speech_key: SecretStr | None = None

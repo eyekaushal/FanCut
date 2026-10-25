@@ -1,6 +1,7 @@
 /** The FanCut API over HTTP. The live channel itself streams over SSE (see `use-channel.ts`). */
 
 import type { Language, Stakes } from "@/lib/i18n";
+import type { CutFacts, Moment, RankedMatch } from "@/lib/overlay";
 
 export const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://127.0.0.1:8000";
 
@@ -74,6 +75,127 @@ export type Recap = {
   language: Language;
 };
 
+/** The Narrator's line for a decision, with the Fact Checker's record of getting there. */
+export type AuditNarration = {
+  text: string;
+  language: Language;
+  source: "model" | "template";
+  drafts: number; // model drafts written (0 when no model is configured)
+  rejected: string[]; // why earlier drafts were rejected, as the checker phrased it
+};
+
+/** One Director decision as the audit trail records it. */
+export type AuditEntry = {
+  decision_id: number;
+  t: number;
+  minute: number;
+  kind: "open" | "cut" | "replay";
+  trigger: "start" | "relevance" | "must_show" | "off_air";
+  match_id: string;
+  previous_match_id: string | null;
+  chosen: RankedMatch;
+  alternatives: RankedMatch[];
+  moment: Moment | null;
+  facts: CutFacts;
+  reference: string;
+  narration: AuditNarration | null; // null until the Narrator has answered
+};
+
+export type DirectorRules = {
+  min_dwell_s: number;
+  hysteresis: number;
+  decision_interval_s: number;
+  alternatives_kept: number;
+};
+
+export type AuditTrail = {
+  schema_version: "audit.v1";
+  channel_id: string;
+  fan: string;
+  language: Language;
+  ended: boolean;
+  api_version: string;
+  model_deployment: string | null;
+  director: DirectorRules;
+  decisions: AuditEntry[];
+};
+
+export type ChannelReport = {
+  personal_moments: number;
+  personal_covered: number;
+  personal_coverage: number;
+  decisive_goals: number;
+  live_goals: number;
+  live_goals_random: number;
+  live_goals_never_switch: number;
+  live_coverage: number;
+  live_coverage_random: number;
+  live_coverage_never_switch: number;
+  cuts: number;
+  replays: number;
+  early_cuts: number;
+};
+
+export type DirectorEvaluation = {
+  seeds: number[];
+  fans: string[];
+  seconds: number;
+  personal_moments: number;
+  personal_covered: number;
+  personal_coverage: number;
+  decisive_goals: number;
+  live_coverage: number;
+  live_coverage_random: number;
+  live_coverage_never_switch: number;
+  cuts: number;
+  early_cuts: number;
+  distinctness_min: number;
+  distinctness_max: number;
+  distinctness_mean: number;
+  per_matchday: { seed: number; fan: string; neutral: boolean; report: ChannelReport }[];
+  distinctness: { seed: number; share: number }[];
+};
+
+export type Evaluation = {
+  status: "measuring" | "ready";
+  progress: { done: number; total: number };
+  director: DirectorEvaluation | null;
+  grounding: {
+    review: {
+      method: string;
+      date: string;
+      lines: number;
+      languages: number;
+      false_claims: number;
+      unsupported_additions: number;
+      target: number;
+    };
+    automated: string;
+    live: {
+      channels: number;
+      lines: number;
+      model: number;
+      template: number;
+      drafts: number;
+      rejected_drafts: number;
+      rejections: { problem: string; count: number }[];
+    };
+  };
+  safety: {
+    model_deployment: string | null;
+    speech: boolean;
+    director: DirectorRules;
+    controls: { name: string; detail: string }[];
+  };
+};
+
+export type Contract = {
+  schema_version: "overlay.v1";
+  transport: string;
+  envelope: Record<string, unknown>;
+  events: { type: string; description: string }[];
+};
+
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(`${API_URL}${path}`, {
     ...init,
@@ -100,7 +222,12 @@ export const api = {
     request<{ profile_id: string }>("/profiles", { method: "POST", body: JSON.stringify(profile) }),
   createChannel: (body: ChannelRequest) =>
     request<ChannelCreated>("/channels", { method: "POST", body: JSON.stringify(body) }),
-  audit: (channelId: string) => request<unknown[]>(`/channels/${channelId}/audit`),
+  /** Every decision the channel made so far, with its evidence and the Narrator's record. */
+  audit: (channelId: string) => request<AuditTrail>(`/channels/${channelId}/audit`),
+  auditUrl: (channelId: string) => `${API_URL}/channels/${channelId}/audit`,
+  /** Measured results for the Trust screen; `measuring` until the Director numbers are in. */
+  evaluation: () => request<Evaluation>("/evaluation"),
+  contract: () => request<Contract>("/contract/overlay.v1"),
   /** The fan's matchday in a few sentences; 409 until the matchday has ended. */
   recap: (channelId: string) => request<Recap>(`/channels/${channelId}/recap`),
   /** Spoken audio for a line, as a blob URL; throws 503 when Speech is not configured. */

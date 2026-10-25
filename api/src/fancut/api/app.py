@@ -14,10 +14,21 @@ from pydantic import BaseModel, Field
 from fancut import __version__
 from fancut.agents.profile_compiler import CompiledProfile, ProfileCompiler
 from fancut.agents.recap import RecapFacts
-from fancut.api.channel import ChannelSession
+from fancut.api.channel import AuditEntry, ChannelSession
 from fancut.api.mcp import build_mcp
+from fancut.api.overlay import contract
 from fancut.api.services import Services, build_services
 from fancut.api.speech import MEDIA_TYPE, Speech
+from fancut.api.trust import (
+    CONTROLS,
+    MANUAL_REVIEW,
+    DirectorMeasurement,
+    DirectorRules,
+    Evaluation,
+    Grounding,
+    Safety,
+    fact_check_tally,
+)
 from fancut.config import Settings, get_settings
 from fancut.profile import FanProfile, Language
 from fancut.telemetry import setup_tracing
@@ -70,11 +81,27 @@ class Recap(BaseModel):
     language: Language
 
 
+class AuditTrail(BaseModel):
+    """Every decision one channel made, with its evidence, for a producer or an auditor."""
+
+    schema_version: str = "audit.v1"
+    channel_id: str
+    fan: str
+    language: Language
+    ended: bool
+    api_version: str
+    model_deployment: str | None  # the Foundry deployment that wrote the lines, if any
+    director: DirectorRules
+    decisions: list[AuditEntry]
+
+
 def create_app(settings: Settings | None = None, services: Services | None = None) -> FastAPI:
     settings = settings or get_settings()
     services = services or build_services(settings)
     mcp = build_mcp(services)
     speech = Speech(settings)
+    measurement = DirectorMeasurement(settings.evaluation_seeds, known=services.matchday)
+    deployment = settings.llm_deployment if services.model is not None else None
 
     @asynccontextmanager
     async def lifespan(_app: FastAPI) -> AsyncGenerator[None]:
@@ -217,9 +244,46 @@ def create_app(settings: Settings | None = None, services: Services | None = Non
         audio = await speech.speak(request.text, request.language)
         return Response(content=audio, media_type=MEDIA_TYPE)
 
-    @app.get("/channels/{channel_id}/audit", tags=["channel"])
-    def audit(channel_id: str) -> list[dict[str, Any]]:
-        return _session(services, channel_id).audit
+    @app.get("/channels/{channel_id}/audit", response_model=AuditTrail, tags=["studio"])
+    def audit(channel_id: str) -> AuditTrail:
+        session = _session(services, channel_id)
+        return AuditTrail(
+            channel_id=channel_id,
+            fan=session.profile.name,
+            language=session.language,
+            ended=session.ended,
+            api_version=__version__,
+            model_deployment=deployment,
+            director=DirectorRules(),
+            decisions=session.audit,
+        )
+
+    @app.get("/contract/overlay.v1", tags=["studio"])
+    def overlay_contract() -> dict[str, Any]:
+        """The overlay.v1 contract: transport, envelope schema and every event type."""
+        return contract()
+
+    @app.get("/evaluation", response_model=Evaluation, tags=["studio"])
+    def evaluation() -> Evaluation:
+        """Measured results for the Trust screen. The Director's numbers are computed on
+        first request, in the background; until then the status is ``measuring``."""
+        measurement.start()
+        return Evaluation(
+            status="ready" if measurement.result else "measuring",
+            progress=measurement.progress,
+            director=measurement.result,
+            grounding=Grounding(
+                review=MANUAL_REVIEW,
+                automated="Foundry evaluators (groundedness, quality, safety): pending.",
+                live=fact_check_tally(services.sessions.values()),
+            ),
+            safety=Safety(
+                model_deployment=deployment,
+                speech=speech.configured,
+                director=DirectorRules(),
+                controls=CONTROLS,
+            ),
+        )
 
     return app
 

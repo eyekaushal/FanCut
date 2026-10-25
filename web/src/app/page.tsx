@@ -31,6 +31,12 @@ export default function Home() {
         >
           Two fans, side by side
         </Link>
+        <Link
+          href="/studio"
+          className="pressable t-headline inline-flex h-11 items-center rounded-control px-5 text-fg-muted hover:bg-fg/6 hover:text-fg"
+        >
+          Studio
+        </Link>
       </div>
 
       <section aria-label="Demo fans" className="mt-14 grid gap-4 sm:grid-cols-2">

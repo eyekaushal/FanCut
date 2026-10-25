@@ -5,6 +5,7 @@ import { useEffect, useReducer, useState } from "react";
 import { API_URL } from "@/lib/api";
 import { applyOverlay, initialState, type ChannelState } from "@/lib/channel-state";
 import type { Overlay } from "@/lib/overlay";
+import { appendLog } from "@/lib/overlay-log";
 import { ReplayHold } from "@/lib/replay-hold";
 
 export type Connection = "connecting" | "live" | "ended" | "lost";
@@ -25,11 +26,12 @@ const EVENT_TYPES: Overlay["type"][] = [
  * Subscribes to one channel's SSE stream and folds every overlay into state, pausing
  * on each replay so it can be seen. The browser reconnects on its own if the connection
  * drops; duplicate events are dropped by the reducer, and a stream that has ended is
- * closed rather than reopened.
+ * closed rather than reopened. `log` is the raw stream as it arrived, for the inspector.
  */
-export function useChannel(channelId: string | null): { state: ChannelState; connection: Connection } {
+export function useChannel(channelId: string | null): { state: ChannelState; connection: Connection; log: Overlay[] } {
   const [state, dispatch] = useReducer(applyOverlay, initialState);
   const [connection, setConnection] = useState<Connection>("connecting");
+  const [log, setLog] = useState<Overlay[]>([]);
 
   useEffect(() => {
     if (!channelId) return;
@@ -40,7 +42,9 @@ export function useChannel(channelId: string | null): { state: ChannelState; con
     });
     const listeners = EVENT_TYPES.map((type) => {
       const listener = (event: MessageEvent<string>) => {
-        hold.push(JSON.parse(event.data) as Overlay);
+        const overlay = JSON.parse(event.data) as Overlay;
+        setLog((l) => appendLog(l, overlay));
+        hold.push(overlay);
         if (type === "end") source.close(); // the held tail still flushes
       };
       source.addEventListener(type, listener);
@@ -55,5 +59,5 @@ export function useChannel(channelId: string | null): { state: ChannelState; con
     };
   }, [channelId]);
 
-  return { state, connection };
+  return { state, connection, log };
 }
