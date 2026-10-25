@@ -10,68 +10,29 @@
 """
 
 import logging
-import time
 from collections import Counter
 from collections.abc import Iterable
 from threading import Lock, Thread
-from typing import TYPE_CHECKING, Literal
+from typing import TYPE_CHECKING, Any, Literal
 
 from pydantic import BaseModel
 
 from fancut.agents.commentary import MAX_DRAFTS, Source
 from fancut.agents.fact_checker import MAX_CHARS
-from fancut.demo import PROFILES
 from fancut.director.director import (
     ALTERNATIVES_KEPT,
     DECISION_INTERVAL,
     HYSTERESIS,
     MIN_DWELL,
 )
-from fancut.director.evaluate import ChannelReport, distinctness, report, run_channel
-from fancut.matchday.matchday import Matchday, build_matchday
-from fancut.profile import FanProfile
+from fancut.evals.director import DirectorEvaluation, measure_director
+from fancut.evals.redteam import RulesResult, build_cases, run_rules
+from fancut.matchday.matchday import Matchday
 
 if TYPE_CHECKING:
     from fancut.api.channel import ChannelSession
 
 log = logging.getLogger(__name__)
-
-
-class FanMatchdayReport(BaseModel):
-    seed: int
-    fan: str
-    neutral: bool  # no club: the fan the live-coverage target is defined for
-    report: ChannelReport
-
-
-class MatchdayDistinctness(BaseModel):
-    seed: int
-    share: float
-
-
-class DirectorEvaluation(BaseModel):
-    seeds: list[int]
-    fans: list[str]
-    seconds: float  # how long the measurement took
-    # Personal coverage, pooled over every fan and matchday. Target 1.0.
-    personal_moments: int
-    personal_covered: int
-    personal_coverage: float
-    # Live coverage of decisive goals for neutral fans, pooled over matchdays, against a
-    # channel switching at random every three minutes and one that never switches.
-    decisive_goals: int
-    live_coverage: float
-    live_coverage_random: float
-    live_coverage_never_switch: float
-    # Stability: routine cuts sooner than the minimum dwell. Target 0.
-    cuts: int
-    early_cuts: int
-    # Distinctness between the two fans, per matchday. Target >= 0.5.
-    distinctness_min: float
-    distinctness_max: float
-    distinctness_mean: float
-    per_matchday: list[FanMatchdayReport]
-    distinctness: list[MatchdayDistinctness]
 
 
 class Progress(BaseModel):
@@ -80,7 +41,8 @@ class Progress(BaseModel):
 
 
 class DirectorMeasurement:
-    """Runs the Director evaluation once, in a worker thread, and remembers the result."""
+    """Runs the Director evaluation and the red team once, in a worker thread, and
+    remembers the results."""
 
     def __init__(self, seeds: Iterable[int], known: Matchday | None = None) -> None:
         self._seeds = list(seeds)
@@ -89,6 +51,7 @@ class DirectorMeasurement:
         self._thread: Thread | None = None
         self._done = 0
         self.result: DirectorEvaluation | None = None
+        self.redteam: RulesResult | None = None
 
     @property
     def progress(self) -> Progress:
@@ -103,77 +66,14 @@ class DirectorMeasurement:
 
     def _run(self) -> None:
         try:
-            self.result = self._measure()
+            if self._known is not None:
+                self.redteam = run_rules(build_cases(self._known))
+            self.result = measure_director(self._seeds, self._known, self._advance)
         except Exception:  # keep the API up; the screen just stays on "measuring"
             log.exception("the Director measurement failed")
 
-    def _measure(self) -> DirectorEvaluation:
-        started = time.perf_counter()
-        fans = list(PROFILES.values())
-        rows: list[FanMatchdayReport] = []
-        shares: list[MatchdayDistinctness] = []
-        for seed in self._seeds:
-            known = self._known
-            matchday = (
-                known if known is not None and known.id == f"md{seed}" else build_matchday(seed)
-            )
-            channels = [run_channel(matchday, fan) for fan in fans]
-            end = max(e.t for e in matchday.events())
-            rows += [
-                FanMatchdayReport(
-                    seed=seed,
-                    fan=channel.profile.name,
-                    neutral=channel.profile.club_id is None,
-                    report=report(matchday, channel),
-                )
-                for channel in channels
-            ]
-            if len(channels) >= 2:
-                share = distinctness(channels[0], channels[1], end)
-                shares.append(MatchdayDistinctness(seed=seed, share=share))
-            self._done += 1
-        return _pool(self._seeds, fans, rows, shares, time.perf_counter() - started)
-
-
-def _pool(
-    seeds: list[int],
-    fans: list[FanProfile],
-    rows: list[FanMatchdayReport],
-    shares: list[MatchdayDistinctness],
-    seconds: float,
-) -> DirectorEvaluation:
-    reports = [r.report for r in rows]
-    # Live coverage is defined for a neutral fan; fall back to everyone if none is a demo fan.
-    neutral = [r.report for r in rows if r.neutral] or reports
-    decisive = sum(r.decisive_goals for r in neutral)
-    moments = sum(r.personal_moments for r in reports)
-    covered = sum(r.personal_covered for r in reports)
-    values = [s.share for s in shares]
-    return DirectorEvaluation(
-        seeds=seeds,
-        fans=[fan.name for fan in fans],
-        seconds=round(seconds, 1),
-        personal_moments=moments,
-        personal_covered=covered,
-        personal_coverage=_ratio(covered, moments) if moments else 1.0,
-        decisive_goals=decisive,
-        live_coverage=_ratio(sum(r.live_goals for r in neutral), decisive),
-        live_coverage_random=_ratio(sum(r.live_goals_random for r in neutral), decisive),
-        live_coverage_never_switch=_ratio(
-            sum(r.live_goals_never_switch for r in neutral), decisive
-        ),
-        cuts=sum(r.cuts for r in reports),
-        early_cuts=sum(r.early_cuts for r in reports),
-        distinctness_min=round(min(values), 3) if values else 0.0,
-        distinctness_max=round(max(values), 3) if values else 0.0,
-        distinctness_mean=round(sum(values) / len(values), 3) if values else 0.0,
-        per_matchday=rows,
-        distinctness=shares,
-    )
-
-
-def _ratio(part: int, whole: int) -> float:
-    return round(part / whole, 4) if whole else 0.0
+    def _advance(self, done: int) -> None:
+        self._done = done
 
 
 # -- grounding -------------------------------------------------------------------------
@@ -252,6 +152,7 @@ class Grounding(BaseModel):
     review: GroundingReview
     automated: str
     live: FactCheckTally
+    redteam: RulesResult | None  # the code rules over the red-team set, run on this machine
 
 
 # -- safety ------------------------------------------------------------------------------
@@ -331,3 +232,6 @@ class Evaluation(BaseModel):
     director: DirectorEvaluation | None
     grounding: Grounding
     safety: Safety
+    # What `python -m fancut.evals` recorded and committed: director, redteam (with the
+    # judge, if it was run), foundry (the evaluators). Absent until someone runs them.
+    recorded: dict[str, dict[str, Any] | None]

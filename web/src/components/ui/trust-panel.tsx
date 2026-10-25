@@ -14,6 +14,9 @@ export function TrustMetrics({ evaluation }: { evaluation: Evaluation | null }) 
   const g = evaluation?.grounding;
   const measuring = evaluation?.status === "measuring";
   const live = g?.live;
+  const redteam = g?.redteam ?? evaluation?.recorded.redteam?.rules ?? null;
+  const judge = evaluation?.recorded.redteam?.judge ?? null;
+  const foundry = evaluation?.recorded.foundry ?? null;
   return (
     <Panel
       title="Measured"
@@ -27,7 +30,7 @@ export function TrustMetrics({ evaluation }: { evaluation: Evaluation | null }) 
               : "Loading…"
       }
     >
-      <dl className="grid grid-cols-2 gap-x-6 gap-y-6 md:grid-cols-3 xl:grid-cols-6">
+      <dl className="grid grid-cols-2 gap-x-6 gap-y-6 md:grid-cols-3 xl:grid-cols-5">
         <Metric
           label="Personal coverage"
           value={d ? `${d.personal_covered}/${d.personal_moments}` : null}
@@ -59,6 +62,24 @@ export function TrustMetrics({ evaluation }: { evaluation: Evaluation | null }) 
           met={g ? (g.review.lines - g.review.false_claims) / g.review.lines >= g.review.target : null}
         />
         <Metric
+          label="Red team · rules"
+          value={redteam ? `${redteam.caught}/${redteam.rule_detectable}` : null}
+          note={redteam ? `${redteam.false_rejects} false rejects · ${redteam.judge_only} left to the judge` : "wrong lines the code rules catch"}
+          met={redteam ? redteam.caught === redteam.rule_detectable && redteam.false_rejects === 0 : null}
+        />
+        <Metric
+          label="Red team · judge"
+          value={judge ? `${judge.caught}/${judge.caught + judge.missed}` : evaluation ? "pending" : null}
+          note={judge ? `${judge.false_rejects} false rejects · ${judge.model}` : "needs a model run"}
+          met={judge ? judge.missed === 0 : undefined}
+        />
+        <Metric
+          label="Foundry groundedness"
+          value={foundry ? `${foundry.metrics.groundedness?.toFixed(1) ?? "—"}/5` : evaluation ? "pending" : null}
+          note={foundry ? `${foundry.scored} lines · pass ${Math.round((foundry.pass_rates.groundedness ?? 0) * 100)}% · ${foundry.evaluator_model}` : "Foundry evaluators, needs a model run"}
+          met={foundry ? (foundry.pass_rates.groundedness ?? 0) >= 0.98 : undefined}
+        />
+        <Metric
           label="Fact Checker today"
           value={live ? `${live.rejected_drafts} rejected` : null}
           note={live ? `${live.model} model · ${live.template} reference · ${live.drafts} drafts` : undefined}
@@ -72,6 +93,7 @@ export function TrustMetrics({ evaluation }: { evaluation: Evaluation | null }) 
 export function ResponsibleAi({ evaluation }: { evaluation: Evaluation | null }) {
   const s = evaluation?.safety;
   const g = evaluation?.grounding;
+  const foundry = evaluation?.recorded.foundry ?? null;
   return (
     <Panel title="Responsible AI" aside={s ? (s.model_deployment ? `Narrator on ${s.model_deployment}` : "Deterministic templates speaking · no model configured") : undefined}>
       {s ? (
@@ -107,7 +129,17 @@ export function ResponsibleAi({ evaluation }: { evaluation: Evaluation | null })
                 <p className="t-caption mt-1 text-fg-muted">
                   {g.review.lines} lines · {g.review.false_claims} false claims · {g.review.unsupported_additions} unsupported addition · {g.review.date}
                 </p>
-                <p className="t-caption mt-1 text-fg-muted">{g.automated}</p>
+                {foundry ? (
+                  <p className="t-caption mt-1 text-fg-muted">
+                    Foundry evaluators on {foundry.scored} Narrator lines ({foundry.generated_at.slice(0, 10)}):{" "}
+                    {Object.entries(foundry.metrics)
+                      .map(([k, v]) => `${k.replace("_", " ")} ${v.toFixed(2)}`)
+                      .join(" · ")}
+                    {foundry.safety_run ? "" : " · content safety not run"}
+                  </p>
+                ) : (
+                  <p className="t-caption mt-1 text-fg-muted">{g.automated}</p>
+                )}
                 {g.live.rejections.length > 0 && (
                   <ul className="t-caption mt-3 space-y-1">
                     {g.live.rejections.map((r) => (
