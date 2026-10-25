@@ -19,6 +19,8 @@ ENV NODE_ENV=production NEXT_TELEMETRY_DISABLED=1 HOSTNAME=0.0.0.0 PORT=3000
 RUN addgroup -S fancut && adduser -S fancut -G fancut
 COPY --from=build --chown=fancut:fancut /app/.next/standalone ./
 COPY --from=build --chown=fancut:fancut /app/.next/static ./.next/static
+# The standalone server does not bundle public/ (the club crests live there).
+COPY --from=build --chown=fancut:fancut /app/public ./public
 USER fancut
 EXPOSE 3000
 CMD ["node", "server.js"]
