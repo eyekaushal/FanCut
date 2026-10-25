@@ -29,10 +29,9 @@ always-on replica because a channel lives in memory for the length of its stream
 
 ## Deploy (one time, about ten minutes)
 
-Prerequisites: [Azure Developer CLI](https://aka.ms/azd-install), an Azure subscription,
-and the Foundry resource created in the portal (its endpoint, deployment name and key;
-the same key and region serve Azure AI Speech). **Docker is not needed:** both images are
-built in the cloud by Azure Container Registry (`remoteBuild: true` in `azure.yaml`).
+Prerequisites: [Azure Developer CLI](https://aka.ms/azd-install), Docker running, an
+Azure subscription, and the Foundry resource created in the portal (its endpoint,
+deployment name and key; the same key and region serve Azure AI Speech).
 
 ```bash
 azd auth login
