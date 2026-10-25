@@ -14,7 +14,7 @@ import { Pill, StatusPill } from "@/components/ui/pill";
 import { ReasonCard } from "@/components/ui/reason-card";
 import { ScoreStrip } from "@/components/ui/score-strip";
 import { palette, type as typeScale } from "@/design/tokens";
-import { clubColors, cut, fan, narration, replay, scoreboard, table } from "@/lib/demo-data";
+import { cut, fan, narration, replay, scoreboard, table } from "@/lib/demo-data";
 import { t, type Language } from "@/lib/i18n";
 
 function Section({ title, note, children }: { title: string; note?: string; children: React.ReactNode }) {
@@ -86,7 +86,7 @@ export default function Design() {
       <div className="grid gap-5 lg:grid-cols-[3fr_2fr]">
         <Section title={t(lang, "asItStands")} note="Numbers are tabular; club colour appears only as a dot on the club's own row.">
           <Panel title={t(lang, "asItStands")} aside={`${t(lang, "liveTable")} · 34 ${t(lang, "played")}`}>
-            <LeagueTable rows={table} lang={lang} fanClubId={fan.clubId} colors={clubColors} />
+            <LeagueTable rows={table} lang={lang} fanClubId={fan.clubId} />
           </Panel>
         </Section>
 

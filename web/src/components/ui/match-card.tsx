@@ -3,10 +3,14 @@
 import { motion, useReducedMotion } from "motion/react";
 
 import { MatchSurface } from "@/components/match-surface";
+import { Crest } from "@/components/ui/crest";
 import { Pill, StatusPill } from "@/components/ui/pill";
 import { reduced, spring } from "@/lib/motion";
 import { ordinal, stakesLabel, t, type Language } from "@/lib/i18n";
 import type { ScoreLine } from "@/lib/overlay";
+
+// Above the club's name, as on a scoreboard; a soft shadow lifts it off the silk.
+const CARD_CREST = "mb-4 size-12 drop-shadow-[0_2px_8px_rgb(0_0_0/0.28)] sm:size-16";
 
 /** Full name where there is room; the club's three-letter code where there is not. */
 function TeamName({ full, short, className = "" }: { full: string; short: string; className?: string }) {
@@ -83,11 +87,13 @@ export function MatchCard({
       </div>
       <div className="mt-10 grid grid-cols-[1fr_auto_1fr] items-center gap-4 sm:mt-12 sm:gap-8">
         <div className="min-w-0">
+          <Crest short={match.home_short} size={64} className={CARD_CREST} />
           <TeamName full={match.home} short={match.home_short} />
           <p className="t-caption mt-1 text-on-card-muted">{sideNote("home", match.home)}</p>
         </div>
         <Score home={match.home_goals} away={match.away_goals} />
         <div className="min-w-0 text-right">
+          <Crest short={match.away_short} size={64} className={`${CARD_CREST} ml-auto`} />
           <TeamName full={match.away} short={match.away_short} />
           <p className="t-caption mt-1 text-on-card-muted">{sideNote("away", match.away)}</p>
         </div>
@@ -97,7 +103,7 @@ export function MatchCard({
   );
 }
 
-/** One match in the strip: codes and goals, the fan's club marked with a dot. */
+/** One match in the strip: crests, codes and goals, the fan's club marked with a dot. */
 export function CompactMatchCard({
   match,
   lang,
@@ -115,6 +121,7 @@ export function CompactMatchCard({
     <div className="flex items-center justify-between t-headline">
       <span className="flex items-center gap-1.5">
         {name === fanClub && <i className="block size-1.5 rounded-full bg-white" aria-label={t(lang, "yourClub")} />}
+        <Crest short={short} size={18} className="mr-0.5" />
         {short}
       </span>
       <span className="tabular">{goals}</span>

@@ -1,4 +1,4 @@
-import { clubGradient } from "@/lib/color";
+import { Crest } from "@/components/ui/crest";
 import { t, type Language } from "@/lib/i18n";
 import type { TableLine } from "@/lib/overlay";
 
@@ -12,22 +12,20 @@ function movement(change: number): string {
 }
 
 /**
- * The table as it stands. Club colour appears only as a dot on the club's own row;
- * the fan's club is set in bold. `colors` maps team_id to the club's hex. `compact`
- * drops goal difference, for a narrow panel where the names matter more.
+ * The table as it stands. Each row leads with the club's crest; the fan's club is set
+ * in bold. `compact` drops goal difference, for a narrow panel where the names matter
+ * more.
  */
 export function LeagueTable({
   rows,
   lang,
   fanClubId,
-  colors,
   limit,
   compact = false,
 }: {
   rows: TableLine[];
   lang: Language;
   fanClubId?: string | null;
-  colors: Record<string, string>;
   limit?: number;
   compact?: boolean;
 }) {
@@ -53,11 +51,7 @@ export function LeagueTable({
               <td className="py-2.5 pr-2 text-fg-muted">{row.position}</td>
               <td className="w-full max-w-0 py-2.5">
                 <span className="flex min-w-0 items-center gap-2.5">
-                  <i
-                    className="block size-2.5 shrink-0 rounded-full"
-                    style={{ background: clubGradient(colors[row.team_id] ?? "#888888") }}
-                    aria-hidden
-                  />
+                  <Crest short={row.short} size={20} className="size-5" />
                   <span className="truncate">{row.team}</span>
                 </span>
               </td>
