@@ -30,6 +30,7 @@ from fancut.api.trust import (
     fact_check_tally,
 )
 from fancut.config import Settings, get_settings
+from fancut.evals.results import load_results
 from fancut.profile import FanProfile, Language
 from fancut.telemetry import setup_tracing
 
@@ -276,6 +277,7 @@ def create_app(settings: Settings | None = None, services: Services | None = Non
                 review=MANUAL_REVIEW,
                 automated="Foundry evaluators (groundedness, quality, safety): pending.",
                 live=fact_check_tally(services.sessions.values()),
+                redteam=measurement.redteam,
             ),
             safety=Safety(
                 model_deployment=deployment,
@@ -283,6 +285,7 @@ def create_app(settings: Settings | None = None, services: Services | None = Non
                 director=DirectorRules(),
                 controls=CONTROLS,
             ),
+            recorded=load_results(),
         )
 
     return app

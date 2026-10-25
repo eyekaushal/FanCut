@@ -156,11 +156,52 @@ export type DirectorEvaluation = {
   distinctness: { seed: number; share: number }[];
 };
 
+export type MutationTally = { cases: number; caught: number };
+
+/** The code rules over the red-team set: lines broken in known ways. */
+export type RedTeamRules = {
+  cases: number;
+  expected_reject: number;
+  rule_detectable: number;
+  caught: number;
+  false_rejects: number;
+  judge_only: number;
+  by_mutation: Record<string, MutationTally>;
+};
+
+export type RedTeamJudge = {
+  model: string;
+  cases: number;
+  caught: number;
+  missed: number;
+  false_rejects: number;
+  by_mutation: Record<string, MutationTally>;
+};
+
+/** What `python -m fancut.evals` recorded; each is absent until someone ran it. */
+export type Recorded = {
+  director: (DirectorEvaluation & { seconds: number }) | null;
+  redteam: { generated_at: string; matchday: string; cases: number; rules: RedTeamRules; judge: RedTeamJudge | null } | null;
+  foundry: {
+    generated_at: string;
+    narrator_model: string;
+    evaluator_model: string;
+    rows: number;
+    scored: number;
+    template_fallbacks: number;
+    metrics: Record<string, number>;
+    pass_rates: Record<string, number>;
+    safety_run: boolean;
+  } | null;
+};
+
 export type Evaluation = {
   status: "measuring" | "ready";
   progress: { done: number; total: number };
   director: DirectorEvaluation | null;
+  recorded: Recorded;
   grounding: {
+    redteam: RedTeamRules | null;
     review: {
       method: string;
       date: string;

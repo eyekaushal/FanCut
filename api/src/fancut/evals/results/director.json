@@ -1,0 +1,295 @@
+{
+  "seeds": [
+    34,
+    35,
+    36,
+    37,
+    38,
+    39
+  ],
+  "fans": [
+    "Arjun",
+    "Maya"
+  ],
+  "seconds": 30.2,
+  "personal_moments": 58,
+  "personal_covered": 58,
+  "personal_coverage": 1.0,
+  "decisive_goals": 122,
+  "live_coverage": 0.1885,
+  "live_coverage_random": 0.1148,
+  "live_coverage_never_switch": 0.123,
+  "cuts": 212,
+  "early_cuts": 0,
+  "distinctness_min": 0.604,
+  "distinctness_max": 0.91,
+  "distinctness_mean": 0.772,
+  "per_matchday": [
+    {
+      "seed": 34,
+      "fan": "Arjun",
+      "neutral": false,
+      "report": {
+        "personal_moments": 11,
+        "personal_covered": 11,
+        "personal_coverage": 1.0,
+        "decisive_goals": 19,
+        "live_goals": 2,
+        "live_goals_random": 1,
+        "live_goals_never_switch": 3,
+        "live_coverage": 0.10526315789473684,
+        "live_coverage_random": 0.05263157894736842,
+        "live_coverage_never_switch": 0.15789473684210525,
+        "cuts": 16,
+        "replays": 9,
+        "early_cuts": 0
+      }
+    },
+    {
+      "seed": 34,
+      "fan": "Maya",
+      "neutral": true,
+      "report": {
+        "personal_moments": 0,
+        "personal_covered": 0,
+        "personal_coverage": 1.0,
+        "decisive_goals": 19,
+        "live_goals": 3,
+        "live_goals_random": 1,
+        "live_goals_never_switch": 3,
+        "live_coverage": 0.15789473684210525,
+        "live_coverage_random": 0.05263157894736842,
+        "live_coverage_never_switch": 0.15789473684210525,
+        "cuts": 15,
+        "replays": 0,
+        "early_cuts": 0
+      }
+    },
+    {
+      "seed": 35,
+      "fan": "Arjun",
+      "neutral": false,
+      "report": {
+        "personal_moments": 7,
+        "personal_covered": 7,
+        "personal_coverage": 1.0,
+        "decisive_goals": 18,
+        "live_goals": 4,
+        "live_goals_random": 2,
+        "live_goals_never_switch": 3,
+        "live_coverage": 0.2222222222222222,
+        "live_coverage_random": 0.1111111111111111,
+        "live_coverage_never_switch": 0.16666666666666666,
+        "cuts": 15,
+        "replays": 3,
+        "early_cuts": 0
+      }
+    },
+    {
+      "seed": 35,
+      "fan": "Maya",
+      "neutral": true,
+      "report": {
+        "personal_moments": 0,
+        "personal_covered": 0,
+        "personal_coverage": 1.0,
+        "decisive_goals": 18,
+        "live_goals": 1,
+        "live_goals_random": 2,
+        "live_goals_never_switch": 4,
+        "live_coverage": 0.05555555555555555,
+        "live_coverage_random": 0.1111111111111111,
+        "live_coverage_never_switch": 0.2222222222222222,
+        "cuts": 21,
+        "replays": 0,
+        "early_cuts": 0
+      }
+    },
+    {
+      "seed": 36,
+      "fan": "Arjun",
+      "neutral": false,
+      "report": {
+        "personal_moments": 5,
+        "personal_covered": 5,
+        "personal_coverage": 1.0,
+        "decisive_goals": 16,
+        "live_goals": 1,
+        "live_goals_random": 2,
+        "live_goals_never_switch": 1,
+        "live_coverage": 0.0625,
+        "live_coverage_random": 0.125,
+        "live_coverage_never_switch": 0.0625,
+        "cuts": 11,
+        "replays": 3,
+        "early_cuts": 0
+      }
+    },
+    {
+      "seed": 36,
+      "fan": "Maya",
+      "neutral": true,
+      "report": {
+        "personal_moments": 0,
+        "personal_covered": 0,
+        "personal_coverage": 1.0,
+        "decisive_goals": 16,
+        "live_goals": 4,
+        "live_goals_random": 2,
+        "live_goals_never_switch": 3,
+        "live_coverage": 0.25,
+        "live_coverage_random": 0.125,
+        "live_coverage_never_switch": 0.1875,
+        "cuts": 25,
+        "replays": 0,
+        "early_cuts": 0
+      }
+    },
+    {
+      "seed": 37,
+      "fan": "Arjun",
+      "neutral": false,
+      "report": {
+        "personal_moments": 13,
+        "personal_covered": 13,
+        "personal_coverage": 1.0,
+        "decisive_goals": 21,
+        "live_goals": 2,
+        "live_goals_random": 2,
+        "live_goals_never_switch": 1,
+        "live_coverage": 0.09523809523809523,
+        "live_coverage_random": 0.09523809523809523,
+        "live_coverage_never_switch": 0.047619047619047616,
+        "cuts": 17,
+        "replays": 7,
+        "early_cuts": 0
+      }
+    },
+    {
+      "seed": 37,
+      "fan": "Maya",
+      "neutral": true,
+      "report": {
+        "personal_moments": 0,
+        "personal_covered": 0,
+        "personal_coverage": 1.0,
+        "decisive_goals": 21,
+        "live_goals": 4,
+        "live_goals_random": 2,
+        "live_goals_never_switch": 1,
+        "live_coverage": 0.19047619047619047,
+        "live_coverage_random": 0.09523809523809523,
+        "live_coverage_never_switch": 0.047619047619047616,
+        "cuts": 16,
+        "replays": 0,
+        "early_cuts": 0
+      }
+    },
+    {
+      "seed": 38,
+      "fan": "Arjun",
+      "neutral": false,
+      "report": {
+        "personal_moments": 14,
+        "personal_covered": 14,
+        "personal_coverage": 1.0,
+        "decisive_goals": 25,
+        "live_goals": 3,
+        "live_goals_random": 4,
+        "live_goals_never_switch": 3,
+        "live_coverage": 0.12,
+        "live_coverage_random": 0.16,
+        "live_coverage_never_switch": 0.12,
+        "cuts": 21,
+        "replays": 10,
+        "early_cuts": 0
+      }
+    },
+    {
+      "seed": 38,
+      "fan": "Maya",
+      "neutral": true,
+      "report": {
+        "personal_moments": 0,
+        "personal_covered": 0,
+        "personal_coverage": 1.0,
+        "decisive_goals": 25,
+        "live_goals": 6,
+        "live_goals_random": 4,
+        "live_goals_never_switch": 3,
+        "live_coverage": 0.24,
+        "live_coverage_random": 0.16,
+        "live_coverage_never_switch": 0.12,
+        "cuts": 19,
+        "replays": 0,
+        "early_cuts": 0
+      }
+    },
+    {
+      "seed": 39,
+      "fan": "Arjun",
+      "neutral": false,
+      "report": {
+        "personal_moments": 8,
+        "personal_covered": 8,
+        "personal_coverage": 1.0,
+        "decisive_goals": 23,
+        "live_goals": 2,
+        "live_goals_random": 3,
+        "live_goals_never_switch": 1,
+        "live_coverage": 0.08695652173913043,
+        "live_coverage_random": 0.13043478260869565,
+        "live_coverage_never_switch": 0.043478260869565216,
+        "cuts": 19,
+        "replays": 7,
+        "early_cuts": 0
+      }
+    },
+    {
+      "seed": 39,
+      "fan": "Maya",
+      "neutral": true,
+      "report": {
+        "personal_moments": 0,
+        "personal_covered": 0,
+        "personal_coverage": 1.0,
+        "decisive_goals": 23,
+        "live_goals": 5,
+        "live_goals_random": 3,
+        "live_goals_never_switch": 1,
+        "live_coverage": 0.21739130434782608,
+        "live_coverage_random": 0.13043478260869565,
+        "live_coverage_never_switch": 0.043478260869565216,
+        "cuts": 17,
+        "replays": 0,
+        "early_cuts": 0
+      }
+    }
+  ],
+  "distinctness": [
+    {
+      "seed": 34,
+      "share": 0.826530612244898
+    },
+    {
+      "seed": 35,
+      "share": 0.6040609137055838
+    },
+    {
+      "seed": 36,
+      "share": 0.7969543147208121
+    },
+    {
+      "seed": 37,
+      "share": 0.6363636363636364
+    },
+    {
+      "seed": 38,
+      "share": 0.8585858585858586
+    },
+    {
+      "seed": 39,
+      "share": 0.9095477386934674
+    }
+  ]
+}
