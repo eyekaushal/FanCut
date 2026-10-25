@@ -124,6 +124,32 @@ export type ActionData = {
   xg: number | null;
 };
 
+/** One player's numbers so far, computed in code from the event stream. */
+export type PlayerStats = {
+  player_id: string;
+  name: string;
+  passes: number;
+  passes_completed: number;
+  pass_difficulty: number; // mean rating of the passes attempted, 0–1
+  longest_pass_m: number;
+  fastest_pass_mps: number;
+  carries: number;
+  distance_carried_m: number;
+  top_speed_mps: number;
+  bursts: number; // carries in the league's fastest 1%
+  shots: number;
+  goals: number;
+  xg: number;
+  fastest_shot_mps: number;
+  tackles: number;
+  interceptions: number;
+};
+
+export type PlayersData = {
+  match_id: string;
+  players: PlayerStats[]; // everyone on the pitch in the match on screen
+};
+
 export type FantasyData = {
   total: number;
   players: { name: string; points: number; captain: boolean }[];
@@ -137,4 +163,5 @@ export type Overlay =
   | { type: "table"; seq: number; t: number; data: { rows: TableLine[] } }
   | { type: "fantasy"; seq: number; t: number; data: FantasyData }
   | { type: "focus"; seq: number; t: number; data: { match_id: string | null; ranking: RankedMatch | null } }
+  | { type: "players"; seq: number; t: number; data: PlayersData }
   | { type: "end"; seq: number; t: number; data: Record<string, never> };

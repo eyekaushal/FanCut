@@ -14,8 +14,8 @@ export const spring = {
   snap: { type: "spring", bounce: 0, visualDuration: 0.22 } satisfies Transition,
   /** After a flick or a throw: a little overshoot, because the gesture had momentum. */
   throw: { type: "spring", bounce: 0.2, visualDuration: 0.4 } satisfies Transition,
-  /** The cut: the whole stage moving. */
-  stage: { type: "spring", bounce: 0, visualDuration: 0.55 } satisfies Transition,
+  /** The cut: the whole stage moving; settled well inside 600 ms. */
+  stage: { type: "spring", bounce: 0, visualDuration: 0.42 } satisfies Transition,
 } as const;
 
 /** Cross-fade for people who asked for reduced motion: still feedback, no travel. */

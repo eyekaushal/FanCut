@@ -1,5 +1,10 @@
+"use client";
+
+import { motion, useReducedMotion } from "motion/react";
+
 import { MatchSurface } from "@/components/match-surface";
-import { StatusPill } from "@/components/ui/pill";
+import { Pill, StatusPill } from "@/components/ui/pill";
+import { reduced, spring } from "@/lib/motion";
 import { ordinal, stakesLabel, t, type Language } from "@/lib/i18n";
 import type { ScoreLine } from "@/lib/overlay";
 
@@ -35,6 +40,7 @@ export function MatchCard({
   fanClub,
   fanClubPosition,
   seed = 0,
+  replay = null,
   children,
 }: {
   match: ScoreLine;
@@ -42,8 +48,11 @@ export function MatchCard({
   fanClub?: string | null;
   fanClubPosition?: number | null;
   seed?: number;
+  /** Set while a replay is on screen: the sting replaces the live pill. */
+  replay?: { minute: number } | null;
   children?: React.ReactNode;
 }) {
+  const prefersReduced = useReducedMotion();
   const sideNote = (side: "home" | "away", name: string) => {
     const parts = [t(lang, side)];
     if (name === fanClub && fanClubPosition) {
@@ -55,7 +64,21 @@ export function MatchCard({
     <article className="grain rounded-card p-6 text-on-card sm:p-8" aria-label={`${match.home} v ${match.away}`}>
       <MatchSurface home={match.home_color} away={match.away_color} seed={seed} />
       <div className="flex items-center justify-between">
-        <StatusPill status={match.status} minute={match.minute} lang={lang} />
+        {replay ? (
+          <motion.span
+            initial={{ scale: prefersReduced ? 1 : 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={prefersReduced ? reduced : spring.throw}
+          >
+            <Pill tone="solid">
+              <span className="tabular uppercase">
+                {t(lang, "replay")} · {t(lang, "minute", { n: replay.minute })}
+              </span>
+            </Pill>
+          </motion.span>
+        ) : (
+          <StatusPill status={match.status} minute={match.minute} lang={lang} />
+        )}
         <span className="t-caption uppercase text-on-card-muted">{stakesLabel(lang, match.stakes)}</span>
       </div>
       <div className="mt-10 grid grid-cols-[1fr_auto_1fr] items-center gap-4 sm:mt-12 sm:gap-8">
@@ -100,17 +123,25 @@ export function CompactMatchCard({
   const label =
     match.status === "live" ? (match.on_air ? t(lang, "onAir") : "") : t(lang, match.status === "half_time" ? "halfTime" : "fullTime");
   const Tag = onSelect ? "button" : "div";
+  const prefersReduced = useReducedMotion();
   return (
     <Tag
       type={onSelect ? "button" : undefined}
       onClick={onSelect ? () => onSelect(match.match_id) : undefined}
       aria-pressed={onSelect ? selected : undefined}
       aria-label={`${match.home} ${match.home_goals}, ${match.away} ${match.away_goals}`}
-      className={`grain pressable w-[156px] shrink-0 snap-start rounded-panel p-3.5 text-left text-on-card ${
-        selected ? "ring-2 ring-white ring-offset-2 ring-offset-bg" : ""
-      }`}
+      className="grain pressable relative w-[156px] shrink-0 snap-start rounded-panel p-3.5 text-left text-on-card"
     >
       <MatchSurface home={match.home_color} away={match.away_color} size="small" />
+      {selected && (
+        // One ring per strip, sliding to whichever card is on screen.
+        <motion.span
+          layoutId="strip-ring"
+          className="pointer-events-none absolute inset-0 rounded-panel ring-2 ring-white ring-offset-2 ring-offset-bg"
+          transition={prefersReduced ? reduced : spring.settle}
+          aria-hidden
+        />
+      )}
       <div className="t-micro h-4 uppercase">
         {match.on_air ? label : <span className="text-on-card-muted">{label}</span>}
       </div>

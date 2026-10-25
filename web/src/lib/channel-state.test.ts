@@ -10,6 +10,7 @@ import {
   matchOnAir,
   matchShown,
   narrationOnAir,
+  playersShown,
   rankingOf,
 } from "./channel-state";
 
@@ -76,6 +77,14 @@ describe("applyOverlay", () => {
     expect(rankingOf(state, "md34-09")?.reasons).toContain("your_club");
     expect(rankingOf(state, "md34-03")?.value).toBe(1.31);
     expect(rankingOf(state, "md34-10")).toBeNull();
+  });
+
+  it("keeps players' numbers only for the match on screen", () => {
+    const stats = { player_id: "kgc-09", name: "Rohan Mehta", passes: 3, passes_completed: 2, pass_difficulty: 0.4, longest_pass_m: 22, fastest_pass_mps: 14, carries: 2, distance_carried_m: 18, top_speed_mps: 3.1, bursts: 0, shots: 1, goals: 0, xg: 0.08, fastest_shot_mps: 20, tackles: 0, interceptions: 1 };
+    const state = play([at("cut", cut("en")), at("players", { match_id: "md34-09", players: [stats] })]);
+    expect(playersShown(state)?.players[0]?.name).toBe("Rohan Mehta");
+    const elsewhere = applyOverlay(state, at("focus", { match_id: "md34-05", ranking: null }));
+    expect(playersShown(elsewhere)).toBeNull();
   });
 
   it("keeps only the most recent plays", () => {

@@ -21,6 +21,7 @@ class OverlayType(StrEnum):
     TABLE = "table"  # the league table as it stands
     FANTASY = "fantasy"  # the fan's fantasy points
     FOCUS = "focus"  # the fan locked the picture to a match (or released it)
+    PLAYERS = "players"  # per-player numbers for everyone on the pitch in the match shown
     END = "end"
 
 
