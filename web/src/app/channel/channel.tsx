@@ -34,7 +34,7 @@ export function Channel() {
   const profileId = params.get("profile") ?? "arjun";
   const speed = Number(params.get("speed")) || DEFAULT_SPEED;
   const channel = useFanChannel(profileId, params.get("lang"), speed);
-  const { profile, state, connection, lang, fanClub, fanPosition, colors, error, setFocus, channelId } = channel;
+  const { profile, state, connection, lang, fanClub, fanPosition, error, setFocus, channelId } = channel;
   const shown = matchShown(state);
   const recap = useRecap(channelId, state.ended);
   const players = playersShown(state);
@@ -143,7 +143,7 @@ export function Channel() {
             aside={state.table[0] ? `${t(lang, "liveTable")} · ${state.table[0].played} ${t(lang, "played")}` : undefined}
           >
             {state.table.length ? (
-              <LeagueTable rows={state.table} lang={lang} fanClubId={profile?.club_id} colors={colors} limit={8} compact />
+              <LeagueTable rows={state.table} lang={lang} fanClubId={profile?.club_id} limit={8} compact />
             ) : (
               <p className="t-callout text-fg-muted">—</p>
             )}
