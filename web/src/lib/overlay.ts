@@ -43,7 +43,7 @@ export type Moment = {
 };
 
 export type CutFacts = {
-  kind: "open" | "cut" | "replay";
+  kind: "open" | "cut" | "replay" | "live";
   minute: number;
   home_team: string;
   away_team: string;
@@ -76,7 +76,7 @@ export type RankedMatch = {
 export type CutData = {
   decision_id: number;
   kind: CutFacts["kind"];
-  trigger: "start" | "relevance" | "must_show" | "off_air";
+  trigger: "start" | "relevance" | "must_show" | "off_air" | "moment";
   match_id: string;
   text: string; // the correct reference line, shown at once
   language: Language;

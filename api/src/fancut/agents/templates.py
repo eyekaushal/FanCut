@@ -18,6 +18,8 @@ _OPENERS = {
             HINGLISH: "Ab chalte hain {match} par, {minute}': {why}."},
     "replay": {EN: "Replay from {match}, {minute}': {why}.", HI: "{match} से रीप्ले, {minute}': {why}।",
                HINGLISH: "{match} se replay, {minute}': {why}."},
+    "live": {EN: "{match}, {minute}': {why}!", HI: "{match}, {minute}': {why}!",
+             HINGLISH: "{match}, {minute}': {why}!"},
 }  # fmt: skip
 
 _WHY = {

@@ -47,7 +47,7 @@ class Moment(BaseModel):
 class CutFacts(BaseModel):
     model_config = ConfigDict(frozen=True)
 
-    kind: Literal["open", "cut", "replay"]
+    kind: Literal["open", "cut", "replay", "live"]
     minute: int
     home_team: str
     away_team: str

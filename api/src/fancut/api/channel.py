@@ -20,14 +20,14 @@ from fancut.agents.facts import CutFacts, Moment, facts_for
 from fancut.agents.recap import RecapFacts, recap_facts
 from fancut.agents.templates import narrate_cut, narrate_recap
 from fancut.api.overlay import Overlay, OverlayType, ScoreLine, TableLine
-from fancut.director.director import Decision, Director
+from fancut.director.director import Decision, Director, Kind, Trigger
 from fancut.director.relevance import Relevance, relevance
 from fancut.insights import PlayerLedger
 from fancut.matchday.matchday import Matchday
 from fancut.matchday.state import MatchdayState, Update
 from fancut.profile import FanProfile, Language
 from fancut.sim.replay import Replayer
-from fancut.sim.schema import EventType
+from fancut.sim.schema import Event, EventType
 
 SCOREBOARD_EVERY = 30.0  # seconds of matchday time
 NARRATION_GRACE = 15.0  # wall-clock seconds to wait for late narrations at the end
@@ -135,10 +135,14 @@ class ChannelSession:
             self._t = event.t
             update = state.update(event)
             ledger.update(event)
-            for decision in director.observe(update, state):
+            decided = director.observe(update, state)
+            for decision in decided:
                 yield self._cut(
                     decision, facts_for(decision, state, self.profile), pending, narrations
                 )
+            live = self._live_moment(event, decided, state, director)
+            if live is not None:
+                yield self._cut(live, facts_for(live, state, self.profile), pending, narrations)
             if self._focus_changed:
                 self._focus_changed = False
                 yield self._focus_overlay(state)
@@ -222,6 +226,32 @@ class ChannelSession:
                 "alternatives": [a.model_dump() for a in alternatives],
                 "value": round(decision.chosen.value, 3),
             },
+        )
+
+    def _live_moment(
+        self, event: Event, decided: list[Decision], state: MatchdayState, director: Director
+    ) -> Decision | None:
+        """A goal or red card in the match on screen gets its own line, picture unchanged.
+
+        The Director only speaks when it moves the picture; a moment the fan is already
+        watching would otherwise pass in silence. A moment the Director just replayed
+        or cut to is already narrated, so it is skipped here.
+        """
+        shown = self.focus or director.on_air
+        if event.match_id != shown or not _is_moment(event):
+            return None
+        if any(d.event is not None and d.event.seq == event.seq for d in decided):
+            return None
+        feed = state.feeds[event.match_id]
+        return Decision(
+            kind=Kind.LIVE,
+            trigger=Trigger.MOMENT,
+            t=event.t,
+            match_id=event.match_id,
+            previous_match_id=director.on_air,
+            chosen=relevance(self.profile, feed, state),
+            alternatives=(),
+            event=event,
         )
 
     def _players(self, state: MatchdayState, ledger: PlayerLedger, director: Director) -> Overlay:
@@ -347,4 +377,10 @@ def _ranked(relevance: Relevance) -> Ranked:
         drama=round(relevance.drama, 3),
         stake=round(relevance.stake, 3),
         reasons=list(relevance.reasons),
+    )
+
+
+def _is_moment(event: Event) -> bool:
+    return event.type is EventType.GOAL or (
+        event.type is EventType.CARD and event.qualifiers.get("color") == "red"
     )
