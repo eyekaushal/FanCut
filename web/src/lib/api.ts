@@ -90,8 +90,8 @@ export type AuditEntry = {
   decision_id: number;
   t: number;
   minute: number;
-  kind: "open" | "cut" | "replay";
-  trigger: "start" | "relevance" | "must_show" | "off_air";
+  kind: "open" | "cut" | "replay" | "live";
+  trigger: "start" | "relevance" | "must_show" | "off_air" | "moment";
   match_id: string;
   previous_match_id: string | null;
   chosen: RankedMatch;

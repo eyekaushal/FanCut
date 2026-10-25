@@ -16,6 +16,7 @@ const TRIGGER: Record<AuditEntry["trigger"], string> = {
   relevance: "more relevant",
   must_show: "must-show moment",
   off_air: "match went off air",
+  moment: "moment in the match on screen",
 };
 
 /**
@@ -96,7 +97,7 @@ function DecisionRow({
             )}
           </span>
           <span className="t-body mt-2 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
-            {from && entry.kind !== "open" && (
+            {from && entry.kind !== "open" && entry.kind !== "live" && (
               <>
                 <span className="flex items-center gap-2 text-fg-muted">
                   <ClubDots home={from.homeColor} away={from.awayColor} />

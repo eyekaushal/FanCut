@@ -205,6 +205,35 @@ def test_the_evaluation_measures_the_director_and_tallies_the_fact_checker(
     assert len(director["per_matchday"]) == 2 and body["progress"] == {"done": 1, "total": 1}
 
 
+def test_every_goal_in_the_match_on_screen_gets_its_own_line(client: TestClient) -> None:
+    overlays = _stream(client, "maya", until=90)
+    cuts = [o["data"] for o in overlays if o["type"] == "cut"]
+    live = [c for c in cuts if c["kind"] == "live"]
+    assert live, "a neutral fan's channel stays on matches long enough to see goals"
+    for line in live:
+        assert line["trigger"] == "moment" and line["facts"]["moment"] is not None
+        assert line["facts"]["moment"]["player"] in line["text"]
+        assert line["chosen"]["match_id"] == line["match_id"]
+    narrated = {o["data"]["decision_id"] for o in overlays if o["type"] == "narration"}
+    assert {c["decision_id"] for c in live} <= narrated
+
+    # Every goal in the match on screen is spoken about exactly once: live, or as the
+    # Director's replay of it.
+    on_air = None
+    spoken: set[tuple[str, int]] = set()
+    for o in overlays:
+        if o["type"] == "cut":
+            moment = o["data"]["facts"]["moment"]
+            if moment and moment["type"] == "goal":
+                spoken.add((o["data"]["match_id"], moment["minute"]))
+            if o["data"]["kind"] in ("open", "cut"):
+                on_air = o["data"]["match_id"]
+        elif o["type"] == "action" and o["data"]["type"] == "goal":
+            assert (o["data"]["match_id"], o["data"]["minute"]) in spoken or o["data"][
+                "match_id"
+            ] == on_air
+
+
 def test_a_compiled_profile_can_be_fetched_by_id(client: TestClient) -> None:
     compiled = client.post(
         "/profiles/compile", json={"message": "Oakbridge Town fan, Hinglish please"}

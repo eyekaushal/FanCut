@@ -26,14 +26,19 @@ export function ReasonCard({
   const prefersReduced = useReducedMotion();
   const line = narration && narration.decision_id === cut.decision_id ? narration : null;
   const text = line?.text ?? cut.text;
-  const kind = cut.kind === "replay" ? t(lang, "replay") : t(lang, "whyThisCut");
+  const kind =
+    cut.kind === "replay"
+      ? t(lang, "replay")
+      : cut.kind === "live"
+        ? t(lang, cut.facts.moment?.type === "red_card" ? "redCard" : "goal")
+        : t(lang, "whyThisCut");
   const muted = onCard ? "text-on-card-muted" : "text-fg-muted";
 
   return (
     <div>
       <div className={`t-micro mb-2 flex items-center gap-2 uppercase ${muted}`}>
         <span>{kind}</span>
-        {!line && cut.kind !== "replay" && (
+        {!line && cut.kind !== "replay" && cut.kind !== "live" && (
           <span className="normal-case tracking-normal" aria-live="polite">
             · {t(lang, "narrating")}
           </span>

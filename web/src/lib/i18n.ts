@@ -18,6 +18,8 @@ const STRINGS = {
   fullTime:    { en: "FT",            hi: "फ़ुल टाइम",        hinglish: "FT" },
   onAir:       { en: "On air",        hi: "ऑन एयर",          hinglish: "On air" },
   replay:      { en: "Replay",        hi: "रीप्ले",           hinglish: "Replay" },
+  goal:        { en: "Goal",          hi: "गोल",             hinglish: "Goal" },
+  redCard:     { en: "Red card",      hi: "रेड कार्ड",         hinglish: "Red card" },
   home:        { en: "Home",          hi: "होम",             hinglish: "Home" },
   away:        { en: "Away",          hi: "अवे",             hinglish: "Away" },
   yourClub:    { en: "Your club",     hi: "आपका क्लब",        hinglish: "Aapka club" },

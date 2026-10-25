@@ -23,6 +23,7 @@ class Kind(StrEnum):
     OPEN = "open"  # first pick of the matchday
     CUT = "cut"  # switch the live picture to another match
     REPLAY = "replay"  # show a moment the fan did not see live
+    LIVE = "live"  # a moment in the match already on screen: the picture stays, a line is written
 
 
 class Trigger(StrEnum):
@@ -30,6 +31,7 @@ class Trigger(StrEnum):
     RELEVANCE = "relevance"  # another match became clearly more relevant
     MUST_SHOW = "must_show"  # something happened that this fan cannot miss
     OFF_AIR = "off_air"  # the match on air reached half-time or full time
+    MOMENT = "moment"  # a goal or red card happened in the match on screen (Kind.LIVE only)
 
 
 class Decision(BaseModel):
