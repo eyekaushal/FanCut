@@ -126,7 +126,13 @@ def resolve(draft: ProfileDraft, message: str) -> CompiledProfile:
 
 
 def _language_of(message: str) -> Language:
-    return Language.HINDI if _DEVANAGARI.search(message) else Language.ENGLISH
+    """The language asked for by name, else the script the fan wrote in."""
+    lowered = message.lower()
+    if "hinglish" in lowered:
+        return Language.HINGLISH
+    if "hindi" in lowered or _DEVANAGARI.search(message):
+        return Language.HINDI
+    return Language.ENGLISH
 
 
 def _extract_without_model(message: str) -> ProfileDraft:

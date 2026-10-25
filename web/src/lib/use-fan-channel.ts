@@ -45,10 +45,10 @@ export function useFanChannel(profileId: string, requestedLang: string | null, s
     let cancelled = false;
     (async () => {
       try {
-        const [profiles, md] = await Promise.all([api.demoProfiles(), api.matchday()]);
+        const [fan, md] = await Promise.all([api.profile(profileId), api.matchday()]);
         if (cancelled) return;
         setMatchday(md);
-        setProfile(profiles[profileId] ?? null);
+        setProfile(fan);
         const created = await api.createChannel({
           profile_id: profileId,
           language: isLanguage(requestedLang) ? requestedLang : undefined,

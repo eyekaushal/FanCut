@@ -80,6 +80,8 @@ export type CutData = {
   match_id: string;
   text: string; // the correct reference line, shown at once
   language: Language;
+  /** On a Hinglish channel, the Hindi reference line for the voice; null elsewhere. */
+  voice_text: string | null;
   facts: CutFacts;
   chosen: RankedMatch;
   alternatives: RankedMatch[];
