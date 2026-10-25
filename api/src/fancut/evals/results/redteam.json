@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-10-25T14:45:34+00:00",
+  "generated_at": "2026-10-25T17:42:56+00:00",
   "matchday": "md34",
   "cases": 588,
   "languages": [
@@ -65,5 +65,33 @@
       }
     }
   },
-  "judge": null
+  "judge": {
+    "model": "gpt-4.1-mini-1",
+    "cases": 216,
+    "caught": 162,
+    "missed": 0,
+    "false_rejects": 0,
+    "by_mutation": {
+      "truthful": {
+        "cases": 54,
+        "caught": 54
+      },
+      "wrong_team": {
+        "cases": 18,
+        "caught": 18
+      },
+      "premature_result": {
+        "cases": 54,
+        "caught": 54
+      },
+      "invented_history": {
+        "cases": 54,
+        "caught": 54
+      },
+      "wrong_ownership": {
+        "cases": 36,
+        "caught": 36
+      }
+    }
+  }
 }
