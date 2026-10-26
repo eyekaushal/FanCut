@@ -3,6 +3,7 @@
 No login, nothing to install. The live site runs until 10 November 2026.
 
 **Live site:** https://ca-web-uqyqafwuy3rta.wittypond-5f858327.westus3.azurecontainerapps.io
+**Demo video:** https://youtu.be/QhVRt6taUzo
 
 Each channel plays a whole matchday in about three minutes (30 match seconds per real
 second). Add `&speed=120` to any channel URL to watch it in under a minute, or `&speed=10`
