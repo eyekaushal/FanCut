@@ -290,13 +290,4 @@ export const api = {
       method: "POST",
       body: JSON.stringify({ match_id: matchId }),
     }),
-  /** team_id → colour, for the table's dots. */
-  clubColors(matchday: Matchday): Record<string, string> {
-    const colors: Record<string, string> = {};
-    for (const f of matchday.fixtures) {
-      colors[f.home.id] = f.home.color;
-      colors[f.away.id] = f.away.color;
-    }
-    return colors;
-  },
 };

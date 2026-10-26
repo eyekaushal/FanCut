@@ -25,7 +25,6 @@ export type FanChannel = {
   lang: Language;
   fanClub: string | null;
   fanPosition: number | null;
-  colors: Record<string, string>;
   setFocus: (matchId: string | null) => void;
 };
 
@@ -65,7 +64,6 @@ export function useFanChannel(profileId: string, requestedLang: string | null, s
   }, [profileId, requestedLang, speed]);
 
   const { state, connection, log } = useChannel(channelId);
-  const colors = useMemo(() => (matchday ? api.clubColors(matchday) : {}), [matchday]);
   const fanClub = useMemo(
     () => matchday?.fixtures.flatMap((f) => [f.home, f.away]).find((c) => c.id === profile?.club_id)?.name ?? null,
     [matchday, profile]
@@ -75,5 +73,5 @@ export function useFanChannel(profileId: string, requestedLang: string | null, s
     if (channelId) void api.setFocus(channelId, matchId).catch(() => undefined);
   };
 
-  return { profile, matchday, channelId, error, state, connection, log, lang, fanClub, fanPosition, colors, setFocus };
+  return { profile, matchday, channelId, error, state, connection, log, lang, fanClub, fanPosition, setFocus };
 }
