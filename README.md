@@ -1,4 +1,16 @@
-# FanCut
+<p align="center">
+  <img src="docs/images/banner.png" alt="FanCut. Ten matches. One channel. Yours." width="100%">
+</p>
+
+<p align="center">
+  <a href="https://github.com/eyekaushal/FanCut/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/eyekaushal/FanCut/ci.yml?branch=main&label=CI&style=flat-square"></a>
+  <img alt="tests" src="https://img.shields.io/badge/tests-134%20API%20%C2%B7%2080%20web-2fb37a?style=flat-square">
+  <img alt="python" src="https://img.shields.io/badge/python-3.12-3776ab?style=flat-square">
+  <img alt="next" src="https://img.shields.io/badge/next.js-16-000000?style=flat-square">
+  <img alt="azure" src="https://img.shields.io/badge/live%20on-Azure%20Container%20Apps-0078d4?style=flat-square">
+  <a href="LICENSE"><img alt="license" src="https://img.shields.io/github/license/eyekaushal/FanCut?style=flat-square"></a>
+  <img alt="last commit" src="https://img.shields.io/github/last-commit/eyekaushal/FanCut?style=flat-square">
+</p>
 
 **Your own AI-directed matchday channel. It watches every match at once, cuts to the one that matters to *you*, and tells you why.**
 
@@ -10,6 +22,7 @@ Built for **Inside the Game: Developer Hackathon** (Microsoft x Premier League),
 
 | | |
 |---|---|
+| **Demo video** | https://youtu.be/QhVRt6taUzo (under two minutes) |
 | **Live demo** | https://ca-web-uqyqafwuy3rta.wittypond-5f858327.westus3.azurecontainerapps.io |
 | **API** | https://ca-api-uqyqafwuy3rta.wittypond-5f858327.westus3.azurecontainerapps.io/health |
 | **How to test it** | [docs/judges.md](docs/judges.md), five minutes, no login |
@@ -54,24 +67,41 @@ The Director, the Drama Engine, the fact sheets, the table and every number on s
 
 ## How it works
 
+```mermaid
+flowchart TB
+    classDef code fill:#1c1f27,stroke:#3a3f4b,color:#f2f3f5
+    classDef agent fill:#2b2558,stroke:#7c6cf0,color:#f2f3f5
+    classDef azure fill:#0f3a5c,stroke:#3b9bdc,color:#f2f3f5
+    classDef out fill:#173a2b,stroke:#2fb37a,color:#f2f3f5
+
+    MD["<b>1 · Ingest</b><br/>Matchday: 10 seeded matches, event.v1 ×10"]:::code
+    DE["<b>2 · Interpret</b><br/>Drama Engines ×10: win probability, suspense, pressure"]:::code
+    ST["Matchday State: live table, fantasy points, players on the pitch"]:::code
+    MCP["MCP server at /mcp<br/>matchday_overview · match_drama · rank_matches"]:::azure
+    PC["Profile Compiler<br/>plain language → profile.v1"]:::agent
+    REL["<b>3 · Decide</b><br/>Relevance per fan: drama × personal stake"]:::code
+    DIR["Director: open · cut · replay · live moment<br/>dwell 45 s, hysteresis 15 %, alternatives kept"]:::code
+    AUD["audit.v1<br/>every decision with its evidence"]:::out
+    REF["<b>4 · Explain</b><br/>Reference line, written by code from the fact sheet"]:::code
+    NAR["Narrator<br/>rewrites it vividly, in the fan's language"]:::agent
+    FC["Fact Checker<br/>code rules, then a model judge · 3 drafts, else the reference line"]:::agent
+    OV["<b>5 · Render</b><br/>overlay.v1 over SSE: cut · narration · scoreboard · table · players"]:::out
+    WEB["Web app: channel · split view · Studio"]:::out
+    SP["Azure AI Speech: en · hi · hinglish"]:::azure
+    FOUNDRY["Microsoft Foundry · gpt-4.1-mini<br/>Agent Framework agents, traced to Application Insights"]:::azure
+
+    MD --> DE --> ST --> REL --> DIR
+    DE -.-> MCP
+    PC --> REL
+    DIR -- "evidence" --> REF --> NAR --> FC --> OV --> WEB --> SP
+    DIR --> AUD
+    FC -. "rejected draft + reason" .-> NAR
+    FOUNDRY -.-> PC
+    FOUNDRY -.-> NAR
+    FOUNDRY -.-> FC
 ```
-Matchday (10 seeded matches)
-   │ event.v1 ×10
-   ▼
-Drama Engines ×10 ──► Matchday State (table, fantasy, players)
-          │                     │
-          ▼                     ▼
-   Relevance (per fan) ◄── Fan Profile ◄── Profile Compiler agent
-          │
-          ▼
-   Director (code: open, cut, replay, live moment) ──► evidence, audit.v1
-          │
-          ▼
-   reference line (code) ──► Narrator agent ──► Fact Checker (rules, then judge)
-          │                                            │ up to 3 drafts, else the reference line
-          ▼                                            ▼
-   overlay.v1 over SSE ──► web app ──► Azure AI Speech
-```
+
+Grey boxes are deterministic code. Purple boxes are Agent Framework agents on a Foundry model. Blue is Azure. Green is what leaves the API.
 
 **Relevance** is drama times personal stake. Drama blends suspense and pressure from the match's own probability path; stake adds the fan's club, a table rival within three places, followed players, fantasy players, the captain and the fixture's stakes. The Director re-ranks every ten seconds of play, never cuts away inside 45 seconds except for a must-show moment (a goal or red card involving the fan's club or players, which it replays and then cuts to), and only moves for a match at least 15 percent more relevant. Every decision keeps the alternatives it beat.
 
