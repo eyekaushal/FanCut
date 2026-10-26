@@ -96,9 +96,3 @@ export function matchSurface(homeHex: string, awayHex: string): string {
   ].join(", ");
 }
 
-/** One club on its own: a quiet top-to-bottom lift, the way light falls on a surface. */
-export function clubGradient(hex: string): string {
-  const color = cardColor(hex);
-  const top = oklchCss({ ...color, l: Math.min(color.l + 0.05, CARD_LIGHTNESS.max + 0.05) });
-  return `linear-gradient(180deg, ${top} 0%, ${oklchCss(color)} 100%)`;
-}

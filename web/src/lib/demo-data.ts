@@ -32,14 +32,6 @@ export const table: TableLine[] = [
   { position: 6, team_id: "wyndmoor", team: "Wyndmoor Albion", short: "WYN", played: 34, points: 49, goal_difference: 0, change: 0 },
 ];
 
-/** team_id → club colour, as `/matchday` reports it. */
-export const clubColors: Record<string, string> = {
-  calderbrook: "#3A6B8C", thornwick: "#1D3557", ashvale: "#B23A48", riverford: "#1F7A5C",
-  oakbridge: "#7A1F2B", saltmarsh: "#457B9D", fenwick: "#6B3E26", northbrook: "#C8102E",
-  elmhurst: "#2F4F2F", copperhill: "#B5651D", bramblefield: "#4A6741", wyndmoor: "#6D597A",
-  silverbeck: "#8D99AE", hawkridge: "#9C2C2C", stonegate: "#5B4B8A", westhaven: "#E0A526",
-  kingsmere: "#2E5EAA", glenhallow: "#2A9D8F", harbourside: "#0E7C86", linden: "#556B2F",
-}; // prettier-ignore
 
 export const fan = { name: "Arjun", club: "Kingsmere City", clubId: "kingsmere" };
 
