@@ -68,40 +68,32 @@ The Director, the Drama Engine, the fact sheets, the table and every number on s
 ## How it works
 
 ```mermaid
-flowchart TB
+flowchart LR
     classDef code fill:#1c1f27,stroke:#3a3f4b,color:#f2f3f5
     classDef agent fill:#2b2558,stroke:#7c6cf0,color:#f2f3f5
     classDef azure fill:#0f3a5c,stroke:#3b9bdc,color:#f2f3f5
     classDef out fill:#173a2b,stroke:#2fb37a,color:#f2f3f5
 
-    MD["<b>1 · Ingest</b><br/>Matchday: 10 seeded matches, event.v1 ×10"]:::code
-    DE["<b>2 · Interpret</b><br/>Drama Engines ×10: win probability, suspense, pressure"]:::code
-    ST["Matchday State: live table, fantasy points, players on the pitch"]:::code
-    MCP["MCP server at /mcp<br/>matchday_overview · match_drama · rank_matches"]:::azure
-    PC["Profile Compiler<br/>plain language → profile.v1"]:::agent
-    REL["<b>3 · Decide</b><br/>Relevance per fan: drama × personal stake"]:::code
-    DIR["Director: open · cut · replay · live moment<br/>dwell 45 s, hysteresis 15 %, alternatives kept"]:::code
-    AUD["audit.v1<br/>every decision with its evidence"]:::out
-    REF["<b>4 · Explain</b><br/>Reference line, written by code from the fact sheet"]:::code
-    NAR["Narrator<br/>rewrites it vividly, in the fan's language"]:::agent
-    FC["Fact Checker<br/>code rules, then a model judge · 3 drafts, else the reference line"]:::agent
-    OV["<b>5 · Render</b><br/>overlay.v1 over SSE: cut · narration · scoreboard · table · players"]:::out
-    WEB["Web app: channel · split view · Studio"]:::out
-    SP["Azure AI Speech: en · hi · hinglish"]:::azure
-    FOUNDRY["Microsoft Foundry · gpt-4.1-mini<br/>Agent Framework agents, traced to Application Insights"]:::azure
+    IN["<b>1 · Ingest</b><br/>10 seeded matches<br/>event.v1 ×10"]:::code
+    IT["<b>2 · Interpret</b><br/>Drama Engines ×10<br/>table · fantasy · players"]:::code
+    DC["<b>3 · Decide</b><br/>relevance = drama × stake<br/>Director: cut · replay · live"]:::code
+    EX["<b>4 · Explain</b><br/>reference line → Narrator<br/>→ Fact Checker, 3 drafts"]:::agent
+    RN["<b>5 · Render</b><br/>overlay.v1 over SSE<br/>web app · Azure AI Speech"]:::out
 
-    MD --> DE --> ST --> REL --> DIR
-    DE -.-> MCP
-    PC --> REL
-    DIR -- "evidence" --> REF --> NAR --> FC --> OV --> WEB --> SP
-    DIR --> AUD
-    FC -. "rejected draft + reason" .-> NAR
-    FOUNDRY -.-> PC
-    FOUNDRY -.-> NAR
-    FOUNDRY -.-> FC
+    MCP["MCP server /mcp"]:::azure
+    PC["Profile Compiler<br/>plain language → profile.v1"]:::agent
+    AUD["audit.v1<br/>every decision + evidence"]:::out
+    FY["Microsoft Foundry · gpt-4.1-mini<br/>Agent Framework · App Insights"]:::azure
+
+    IN --> IT --> DC -- evidence --> EX --> RN
+    IT -.-> MCP
+    PC --> DC
+    DC --> AUD
+    FY -.-> PC
+    FY -.-> EX
 ```
 
-Grey boxes are deterministic code. Purple boxes are Agent Framework agents on a Foundry model. Blue is Azure. Green is what leaves the API.
+Grey is deterministic code. Purple is an Agent Framework agent on a Foundry model. Blue is Azure. Green is what leaves the API.
 
 **Relevance** is drama times personal stake. Drama blends suspense and pressure from the match's own probability path; stake adds the fan's club, a table rival within three places, followed players, fantasy players, the captain and the fixture's stakes. The Director re-ranks every ten seconds of play, never cuts away inside 45 seconds except for a must-show moment (a goal or red card involving the fan's club or players, which it replays and then cuts to), and only moves for a match at least 15 percent more relevant. Every decision keeps the alternatives it beat.
 
