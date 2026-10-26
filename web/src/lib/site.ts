@@ -1,4 +1,4 @@
 export const site = {
   name: "FanCut",
-  tagline: "Watches the match while you sleep. Wakes you before the moment that matters.",
+  tagline: "Your own AI-directed matchday channel. Ten matches, one channel, yours.",
 } as const;

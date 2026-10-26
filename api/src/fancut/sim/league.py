@@ -12,7 +12,7 @@ from fancut.sim.schema import Archetype, Match, MatchMeta, Stakes, Team
 MAX_ATTEMPTS = 2000  # a 0-0 thriller occurs in ~1% of simulations
 FIRST_KICKOFF = datetime(2026, 10, 24, 19, 0, tzinfo=UTC)  # 00:30 IST: a real night match
 
-# 30 matches: enough variety to evaluate wake decisions on every kind of game.
+# 30 matches: enough variety to evaluate the Director on every kind of game.
 DEFAULT_MIX: dict[Archetype, int] = {
     Archetype.BASELINE: 8,
     Archetype.DEAD_RUBBER: 4,
