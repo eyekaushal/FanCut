@@ -1,7 +1,7 @@
 [project]
 name = "fancut"
 version = "0.1.0"
-description = "FanCut API: watches the match while you sleep and wakes you before the moment that matters."
+description = "FanCut API: the matchday simulation, the Drama Engine, the Director and the agents behind a personal matchday channel."
 readme = "README.md"
 license = "MIT"
 authors = [
