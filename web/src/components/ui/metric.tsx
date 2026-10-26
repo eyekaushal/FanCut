@@ -1,3 +1,5 @@
+import { t, type Language } from "@/lib/i18n";
+
 /**
  * One measured number with its method under it. The value is tabular so a row of
  * metrics lines up; "—" while it is still being measured.
@@ -7,12 +9,14 @@ export function Metric({
   value,
   note,
   met,
+  lang,
 }: {
   label: string;
   value: string | null;
   note?: string;
   /** Whether the target was met; shown as a word, never as a colour. */
   met?: boolean | null;
+  lang: Language;
 }) {
   return (
     <div className="min-w-0">
@@ -21,8 +25,8 @@ export function Metric({
       {(note || met !== undefined) && (
         <dd className="t-caption mt-1 text-fg-muted">
           {note}
-          {met === true && <span className="ml-1 text-fg">· met</span>}
-          {met === false && <span className="ml-1 text-fg">· missed</span>}
+          {met === true && <span className="ml-1 text-fg">· {t(lang, "met")}</span>}
+          {met === false && <span className="ml-1 text-fg">· {t(lang, "missed")}</span>}
         </dd>
       )}
     </div>

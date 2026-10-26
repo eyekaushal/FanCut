@@ -1,6 +1,7 @@
 import { Metric } from "@/components/ui/metric";
 import { Panel } from "@/components/ui/panel";
 import type { Evaluation } from "@/lib/api";
+import { t, type Language } from "@/lib/i18n";
 
 const pct = (v: number) => `${Math.round(v * 100)}%`;
 
@@ -9,7 +10,7 @@ const pct = (v: number) => `${Math.round(v * 100)}%`;
  * computed by the API on this machine; the grounding review is a dated manual record;
  * the Fact Checker tally is what this API process has actually done.
  */
-export function TrustMetrics({ evaluation }: { evaluation: Evaluation | null }) {
+export function TrustMetrics({ evaluation, lang }: { evaluation: Evaluation | null; lang: Language }) {
   const d = evaluation?.director ?? null;
   const g = evaluation?.grounding;
   const measuring = evaluation?.status === "measuring";
@@ -19,86 +20,113 @@ export function TrustMetrics({ evaluation }: { evaluation: Evaluation | null }) 
   const foundry = evaluation?.recorded.foundry ?? null;
   return (
     <Panel
-      title="Measured"
+      title={t(lang, "measured")}
       aside={
         measuring
-          ? `Measuring the Director on ${evaluation.progress.total} matchdays… ${evaluation.progress.done}/${evaluation.progress.total}`
+          ? t(lang, "measuring", { n: evaluation.progress.total, done: evaluation.progress.done })
           : d
-            ? `${d.seeds.length} matchdays · ${d.fans.join(" and ")} · ${d.seconds}s on this machine`
+            ? t(lang, "measuredOn", { n: d.seeds.length, fans: d.fans.join(` ${t(lang, "and")} `), s: d.seconds })
             : evaluation
               ? undefined
-              : "Loading…"
+              : t(lang, "loading")
       }
     >
       <dl className="grid grid-cols-2 gap-x-6 gap-y-6 md:grid-cols-3 xl:grid-cols-5">
         <Metric
-          label="Personal coverage"
+          lang={lang}
+          label={t(lang, "personalCoverage")}
           value={d ? `${d.personal_covered}/${d.personal_moments}` : null}
-          note="own goals and red cards seen live or replayed"
+          note={t(lang, "personalCoverageNote")}
           met={d ? d.personal_coverage === 1 : null}
         />
         <Metric
-          label="Live coverage"
+          lang={lang}
+          label={t(lang, "liveCoverage")}
           value={d ? pct(d.live_coverage) : null}
-          note={d ? `vs ${pct(d.live_coverage_random)} random · ${pct(d.live_coverage_never_switch)} never switch` : "decisive goals on air, neutral fan"}
+          note={
+            d
+              ? t(lang, "liveCoverageNote", { random: pct(d.live_coverage_random), never: pct(d.live_coverage_never_switch) })
+              : t(lang, "liveCoverageHint")
+          }
           met={d ? d.live_coverage >= 1.4 * d.live_coverage_random : null}
         />
         <Metric
-          label="Early cuts"
+          lang={lang}
+          label={t(lang, "earlyCuts")}
           value={d ? String(d.early_cuts) : null}
-          note={d ? `of ${d.cuts} cuts, dwell 45 s` : "routine cuts inside the dwell"}
+          note={d ? t(lang, "earlyCutsNote", { n: d.cuts, s: 45 }) : t(lang, "earlyCutsHint")}
           met={d ? d.early_cuts === 0 : null}
         />
         <Metric
-          label="Distinctness"
+          lang={lang}
+          label={t(lang, "distinctness")}
           value={d ? `${pct(d.distinctness_min)}–${pct(d.distinctness_max)}` : null}
-          note="two fans on different matches"
+          note={t(lang, "distinctnessNote")}
           met={d ? d.distinctness_min >= 0.5 : null}
         />
         <Metric
-          label="Grounding"
+          lang={lang}
+          label={t(lang, "grounding")}
           value={g ? `${g.review.lines - g.review.false_claims}/${g.review.lines}` : null}
-          note={g ? `manual review, ${g.review.date} · ${g.review.unsupported_additions} unsupported addition` : undefined}
+          note={g ? t(lang, "groundingNote", { date: g.review.date, n: g.review.unsupported_additions }) : undefined}
           met={g ? (g.review.lines - g.review.false_claims) / g.review.lines >= g.review.target : null}
         />
         <Metric
-          label="Red team · rules"
+          lang={lang}
+          label={t(lang, "redTeamRules")}
           value={redteam ? `${redteam.caught}/${redteam.rule_detectable}` : null}
-          note={redteam ? `${redteam.false_rejects} false rejects · ${redteam.judge_only} left to the judge` : "wrong lines the code rules catch"}
+          note={redteam ? t(lang, "redTeamRulesNote", { f: redteam.false_rejects, j: redteam.judge_only }) : t(lang, "redTeamRulesHint")}
           met={redteam ? redteam.caught === redteam.rule_detectable && redteam.false_rejects === 0 : null}
         />
         <Metric
-          label="Red team · judge"
-          value={judge ? `${judge.caught}/${judge.caught + judge.missed}` : evaluation ? "pending" : null}
-          note={judge ? `${judge.false_rejects} false rejects · ${judge.model}` : "needs a model run"}
+          lang={lang}
+          label={t(lang, "redTeamJudge")}
+          value={judge ? `${judge.caught}/${judge.caught + judge.missed}` : evaluation ? t(lang, "pending") : null}
+          note={judge ? t(lang, "redTeamJudgeNote", { f: judge.false_rejects, model: judge.model }) : t(lang, "needsModelRun")}
           met={judge ? judge.missed === 0 : undefined}
         />
         <Metric
-          label="Foundry groundedness"
-          value={foundry ? `${foundry.metrics.groundedness?.toFixed(1) ?? "—"}/5` : evaluation ? "pending" : null}
-          note={foundry ? `${foundry.scored} lines · pass ${Math.round((foundry.pass_rates.groundedness ?? 0) * 100)}% · ${foundry.evaluator_model}` : "Foundry evaluators, needs a model run"}
+          lang={lang}
+          label={t(lang, "foundryGroundedness")}
+          value={foundry ? `${foundry.metrics.groundedness?.toFixed(1) ?? "—"}/5` : evaluation ? t(lang, "pending") : null}
+          note={
+            foundry
+              ? t(lang, "foundryNote", {
+                  n: foundry.scored,
+                  p: pct(foundry.pass_rates.groundedness ?? 0),
+                  model: foundry.evaluator_model,
+                })
+              : t(lang, "foundryHint")
+          }
           met={foundry ? (foundry.pass_rates.groundedness ?? 0) >= 0.98 : undefined}
         />
         <Metric
-          label="Fact Checker today"
-          value={live ? `${live.rejected_drafts} rejected` : null}
-          note={live ? `${live.model} model · ${live.template} reference · ${live.drafts} drafts` : undefined}
+          lang={lang}
+          label={t(lang, "factCheckerToday")}
+          value={live ? t(lang, "rejectedN", { n: live.rejected_drafts }) : null}
+          note={live ? t(lang, "factCheckerNote", { m: live.model, t: live.template, d: live.drafts }) : undefined}
         />
       </dl>
     </Panel>
   );
 }
 
-/** The controls as built, the Director's rules, and what is speaking. */
-export function ResponsibleAi({ evaluation }: { evaluation: Evaluation | null }) {
+/**
+ * The controls as built, the Director's rules, and what is speaking. The control texts
+ * and the review method are the API's own words, in English.
+ */
+export function ResponsibleAi({ evaluation, lang }: { evaluation: Evaluation | null; lang: Language }) {
   const s = evaluation?.safety;
   const g = evaluation?.grounding;
   const foundry = evaluation?.recorded.foundry ?? null;
   return (
-    <Panel title="Responsible AI" aside={s ? (s.model_deployment ? `Narrator on ${s.model_deployment}` : "Deterministic templates speaking · no model configured") : undefined}>
+    <Panel
+      title={t(lang, "responsibleAi")}
+      aside={s ? (s.model_deployment ? t(lang, "narratorOn", { model: s.model_deployment }) : t(lang, "templatesSpeaking")) : undefined}
+    >
       {s ? (
         <div className="grid gap-8 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
-          <ul className="grid gap-5 sm:grid-cols-2">
+          <ul className="grid gap-5 sm:grid-cols-2" lang="en">
             {s.controls.map((c) => (
               <li key={c.name}>
                 <p className="t-headline">{c.name}</p>
@@ -108,40 +136,49 @@ export function ResponsibleAi({ evaluation }: { evaluation: Evaluation | null })
           </ul>
           <div className="space-y-6">
             <div>
-              <p className="t-micro mb-2 uppercase text-fg-faint">The Director&rsquo;s rules</p>
+              <p className="t-micro mb-2 uppercase text-fg-faint">{t(lang, "directorsRules")}</p>
               <dl className="t-caption tabular grid grid-cols-[1fr_auto] gap-x-6 gap-y-1">
-                <dt className="text-fg-muted">Minimum dwell</dt>
+                <dt className="text-fg-muted">{t(lang, "minDwell")}</dt>
                 <dd>{s.director.min_dwell_s} s</dd>
-                <dt className="text-fg-muted">Hysteresis to cut</dt>
+                <dt className="text-fg-muted">{t(lang, "hysteresis")}</dt>
                 <dd>+{Math.round(s.director.hysteresis * 100)}%</dd>
-                <dt className="text-fg-muted">Re-ranking every</dt>
+                <dt className="text-fg-muted">{t(lang, "rerankEvery")}</dt>
                 <dd>{s.director.decision_interval_s} s</dd>
-                <dt className="text-fg-muted">Alternatives kept</dt>
+                <dt className="text-fg-muted">{t(lang, "alternativesKept")}</dt>
                 <dd>{s.director.alternatives_kept}</dd>
-                <dt className="text-fg-muted">Voice</dt>
-                <dd>{s.speech ? "Azure AI Speech" : "not configured"}</dd>
+                <dt className="text-fg-muted">{t(lang, "voice")}</dt>
+                <dd>{s.speech ? "Azure AI Speech" : t(lang, "notConfigured")}</dd>
               </dl>
             </div>
             {g && (
               <div>
-                <p className="t-micro mb-2 uppercase text-fg-faint">Grounding</p>
-                <p className="t-caption text-fg-muted">{g.review.method}</p>
+                <p className="t-micro mb-2 uppercase text-fg-faint">{t(lang, "grounding")}</p>
+                <p className="t-caption text-fg-muted" lang="en">
+                  {g.review.method}
+                </p>
                 <p className="t-caption mt-1 text-fg-muted">
-                  {g.review.lines} lines · {g.review.false_claims} false claims · {g.review.unsupported_additions} unsupported addition · {g.review.date}
+                  {t(lang, "groundingLines", {
+                    n: g.review.lines,
+                    f: g.review.false_claims,
+                    u: g.review.unsupported_additions,
+                    date: g.review.date,
+                  })}
                 </p>
                 {foundry ? (
                   <p className="t-caption mt-1 text-fg-muted">
-                    Foundry evaluators on {foundry.scored} Narrator lines ({foundry.generated_at.slice(0, 10)}):{" "}
+                    {t(lang, "foundryOn", { n: foundry.scored, date: foundry.generated_at.slice(0, 10) })}{" "}
                     {Object.entries(foundry.metrics)
                       .map(([k, v]) => `${k.replace("_", " ")} ${v.toFixed(2)}`)
                       .join(" · ")}
-                    {foundry.safety_run ? "" : " · content safety not run"}
+                    {foundry.safety_run ? "" : ` · ${t(lang, "safetyNotRun")}`}
                   </p>
                 ) : (
-                  <p className="t-caption mt-1 text-fg-muted">{g.automated}</p>
+                  <p className="t-caption mt-1 text-fg-muted" lang="en">
+                    {g.automated}
+                  </p>
                 )}
                 {g.live.rejections.length > 0 && (
-                  <ul className="t-caption mt-3 space-y-1">
+                  <ul className="t-caption mt-3 space-y-1" lang="en">
                     {g.live.rejections.map((r) => (
                       <li key={r.problem} className="flex justify-between gap-4">
                         <span className="min-w-0 truncate text-fg-muted">{r.problem}</span>
@@ -155,7 +192,7 @@ export function ResponsibleAi({ evaluation }: { evaluation: Evaluation | null })
           </div>
         </div>
       ) : (
-        <p className="t-callout text-fg-muted">Loading…</p>
+        <p className="t-callout text-fg-muted">{t(lang, "loading")}</p>
       )}
     </Panel>
   );

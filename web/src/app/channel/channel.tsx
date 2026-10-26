@@ -17,11 +17,13 @@ import { ScoreStrip } from "@/components/ui/score-strip";
 import { Stage } from "@/components/ui/stage";
 import { api, type Recap } from "@/lib/api";
 import { actionsShown, matchShown, narrationOnAir, playersShown } from "@/lib/channel-state";
-import { t, type Language } from "@/lib/i18n";
+import type { CutData } from "@/lib/overlay";
+import { t, type Language, type StringKey } from "@/lib/i18n";
 import { isLanguage, useFanChannel } from "@/lib/use-fan-channel";
 import { useVoice } from "@/lib/use-voice";
 
 const DEFAULT_SPEED = 30; // match seconds per wall second: a matchday in about three minutes
+const KIND: Record<CutData["kind"], StringKey> = { open: "kindOpen", cut: "kindCut", replay: "replay", live: "live" };
 
 /**
  * One fan's channel. `?profile=` is a profile id (the demo fans are `arjun` and `maya`),
@@ -100,10 +102,10 @@ export function Channel() {
 
       {error && (
         <Panel className="mb-6">
-          <p className="t-body">Could not reach the API at the configured address.</p>
+          <p className="t-body">{t(lang, "apiUnreachable")}</p>
           <p className="t-caption mt-1 text-fg-muted">{error}</p>
           <Button className="mt-4" onClick={() => router.refresh()}>
-            Try again
+            {t(lang, "tryAgain")}
           </Button>
         </Panel>
       )}
@@ -150,7 +152,7 @@ export function Channel() {
           </Panel>
           {profile && profile.fantasy_squad.length > 0 && <FantasyPanel fantasy={state.fantasy} lang={lang} />}
           {state.cuts.length > 1 && (
-            <Panel title="Director's notes" aside={`${state.cuts.length}`}>
+            <Panel title={t(lang, "directorsNotes")} aside={`${state.cuts.length}`}>
               <ol className="t-caption space-y-2 text-fg-muted">
                 {[...state.cuts]
                   .reverse()
@@ -159,7 +161,7 @@ export function Channel() {
                     <li key={c.decision_id} className="flex gap-3 border-t border-hairline pt-2">
                       <span className="tabular w-8 shrink-0 text-fg-faint">{c.facts.minute}′</span>
                       <span className="min-w-0">
-                        <span className="t-micro mr-2 uppercase">{c.kind}</span>
+                        <span className="t-micro mr-2 uppercase">{t(lang, KIND[c.kind])}</span>
                         {c.facts.home_team} {c.facts.home_goals}–{c.facts.away_goals} {c.facts.away_team}
                       </span>
                     </li>
@@ -200,6 +202,6 @@ export function ConnectionPill({ connection, ended, lang }: { connection: string
       </Pill>
     );
   }
-  if (connection === "lost") return <Pill tone="neutral">Reconnecting…</Pill>;
-  return <Pill tone="neutral">Connecting…</Pill>;
+  if (connection === "lost") return <Pill tone="neutral">{t(lang, "reconnecting")}</Pill>;
+  return <Pill tone="neutral">{t(lang, "connecting")}</Pill>;
 }
