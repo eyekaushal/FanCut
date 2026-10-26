@@ -7,17 +7,18 @@ import { Pill } from "@/components/ui/pill";
 import { ClubDots, RelevanceBars, type MatchNames } from "@/components/ui/relevance-bars";
 import type { AuditEntry } from "@/lib/api";
 import { marginOf } from "@/lib/audit";
-import { fontClass, type Language } from "@/lib/i18n";
+import { fontClass, t, type Language, type StringKey } from "@/lib/i18n";
 import { reduced, spring } from "@/lib/motion";
 import { clock } from "@/lib/overlay-log";
 
-const TRIGGER: Record<AuditEntry["trigger"], string> = {
-  start: "kick-off",
-  relevance: "more relevant",
-  must_show: "must-show moment",
-  off_air: "match went off air",
-  moment: "moment in the match on screen",
+const TRIGGER: Record<AuditEntry["trigger"], StringKey> = {
+  start: "triggerStart",
+  relevance: "triggerRelevance",
+  must_show: "triggerMustShow",
+  off_air: "triggerOffAir",
+  moment: "triggerMoment",
 };
+const KIND: Record<AuditEntry["kind"], StringKey> = { open: "kindOpen", cut: "kindCut", replay: "replay", live: "live" };
 
 /**
  * The audit trail as a producer reads it: every decision, newest first, with the
@@ -28,7 +29,7 @@ export function DecisionLog({ entries, names, lang }: { entries: AuditEntry[]; n
   const prefersReduced = useReducedMotion();
   const [open, setOpen] = useState<number | null>(null);
   if (!entries.length) {
-    return <p className="t-callout text-fg-muted">Waiting for the first decision…</p>;
+    return <p className="t-callout text-fg-muted">{t(lang, "waitingFirst")}</p>;
   }
   return (
     <ol className="divide-y divide-hairline">
@@ -87,12 +88,12 @@ function DecisionRow({
         <span className="min-w-0 flex-1">
           <span className="flex flex-wrap items-center gap-2">
             <Pill tone={entry.kind === "replay" ? "solid" : "neutral"} className="uppercase">
-              {entry.kind}
+              {t(lang, KIND[entry.kind])}
             </Pill>
-            <span className="t-caption text-fg-muted">{TRIGGER[entry.trigger]}</span>
+            <span className="t-caption text-fg-muted">{t(lang, TRIGGER[entry.trigger])}</span>
             {entry.moment && (
               <span className="t-caption text-fg-muted">
-                · {entry.moment.minute}′ {entry.moment.type === "goal" ? "goal" : "red card"}, {entry.moment.player}
+                · {entry.moment.minute}′ {t(lang, entry.moment.type === "goal" ? "goal" : "redCard").toLowerCase()}, {entry.moment.player}
               </span>
             )}
           </span>
@@ -115,7 +116,7 @@ function DecisionRow({
             <span className="t-caption tabular text-fg-muted">
               {entry.chosen.value.toFixed(2)}
               {margin !== null &&
-                (margin >= 0 ? ` · +${margin.toFixed(2)} over the next match` : ` · −${Math.abs(margin).toFixed(2)} below the top match`)}
+                ` · ${margin >= 0 ? t(lang, "overNext", { n: margin.toFixed(2) }) : t(lang, "belowTop", { n: Math.abs(margin).toFixed(2) })}`}
             </span>
           </span>
         </span>
@@ -125,26 +126,33 @@ function DecisionRow({
       </button>
 
       <div className="mt-3 space-y-2 sm:pl-15">
-        <Line label="Reference" text={entry.reference} lang={entry.narration?.language ?? lang} muted />
+        <Line label={t(lang, "reference")} text={entry.reference} lang={entry.narration?.language ?? lang} muted />
         {narration && narration.source === "model" && (
-          <Line label={`Narrator · ${narration.drafts} ${narration.drafts === 1 ? "draft" : "drafts"}`} text={narration.text} lang={narration.language} />
+          <Line
+            label={narration.drafts === 1 ? t(lang, "narratorDraft") : t(lang, "narratorDrafts", { n: narration.drafts })}
+            text={narration.text}
+            lang={narration.language}
+          />
         )}
         {narration && narration.source === "template" && (
           <p className="t-caption text-fg-faint">
-            On air: the reference line{narration.drafts > 0 && `, after ${narration.drafts} rejected ${narration.drafts === 1 ? "draft" : "drafts"}`}
+            {t(lang, "onAirReference")}
+            {narration.drafts > 0 && t(lang, "afterRejected", { n: narration.drafts })}
           </p>
         )}
         {!narration && (
           <p className="t-caption text-fg-faint" aria-live="polite">
-            Narrator writing…
+            {t(lang, "narrating")}
           </p>
         )}
         {narration && narration.rejected.length > 0 && (
           <ul className="t-caption space-y-1 text-fg-muted">
             {narration.rejected.map((problem, i) => (
               <li key={`${i}-${problem}`} className="flex gap-2">
-                <span className="shrink-0 text-fg-faint">Fact Checker rejected:</span>
-                <span className="min-w-0">{problem}</span>
+                <span className="shrink-0 text-fg-faint">{t(lang, "factCheckerRejected")}</span>
+                <span className="min-w-0" lang="en">
+                  {problem}
+                </span>
               </li>
             ))}
           </ul>
@@ -164,11 +172,11 @@ function DecisionRow({
           >
             <div className="mt-4 space-y-4 border-t border-hairline pt-4">
               <div>
-                <p className="t-micro mb-2 uppercase text-fg-faint">The ranking at this moment</p>
+                <p className="t-micro mb-2 uppercase text-fg-faint">{t(lang, "rankingNow")}</p>
                 <RelevanceBars chosen={entry.chosen} alternatives={entry.alternatives} names={names} lang={lang} />
               </div>
               <div>
-                <p className="t-micro mb-2 uppercase text-fg-faint">The fact sheet the Narrator was held to</p>
+                <p className="t-micro mb-2 uppercase text-fg-faint">{t(lang, "factSheet")}</p>
                 <pre className="t-micro max-h-64 overflow-auto rounded-control bg-fg/4 p-3 font-mono leading-relaxed text-fg-muted">
                   {JSON.stringify(entry.facts, null, 2)}
                 </pre>

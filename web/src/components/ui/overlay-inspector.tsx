@@ -4,6 +4,7 @@ import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import type { Contract } from "@/lib/api";
+import { t, type Language } from "@/lib/i18n";
 import type { Overlay } from "@/lib/overlay";
 import { OVERLAY_TYPES, clock, countByType, selectLog, type OverlayType } from "@/lib/overlay-log";
 
@@ -14,7 +15,7 @@ type Filter = OverlayType | "all";
  * elsewhere. Filter by type, pause to read, open an event for its JSON, copy it.
  * The contract's own description of each type sits under the filter.
  */
-export function OverlayInspector({ log, contract }: { log: Overlay[]; contract: Contract | null }) {
+export function OverlayInspector({ log, contract, lang }: { log: Overlay[]; contract: Contract | null; lang: Language }) {
   const [filter, setFilter] = useState<Filter>("all");
   const [paused, setPaused] = useState(false);
   const [frozen, setFrozen] = useState<Overlay[]>([]);
@@ -34,23 +35,27 @@ export function OverlayInspector({ log, contract }: { log: Overlay[]; contract: 
   return (
     <div>
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <ul className="flex flex-wrap gap-1.5" aria-label="Event types">
-          <FilterChip active={filter === "all"} onClick={() => setFilter("all")} label="All" count={shown.length} />
+        <ul className="flex flex-wrap gap-1.5" aria-label={t(lang, "eventTypes")}>
+          <FilterChip active={filter === "all"} onClick={() => setFilter("all")} label={t(lang, "all")} count={shown.length} />
           {OVERLAY_TYPES.map((type) => (
             <FilterChip key={type} active={filter === type} onClick={() => setFilter(type)} label={type} count={counts[type]} />
           ))}
         </ul>
         <Button size="small" variant={paused ? "primary" : "secondary"} aria-pressed={paused} onClick={togglePause}>
-          {paused ? "Resume" : "Pause"}
+          {paused ? t(lang, "resume") : t(lang, "pause")}
         </Button>
       </div>
 
-      {description && <p className="t-caption mt-3 max-w-[64ch] text-fg-muted">{description}</p>}
+      {description && (
+        <p className="t-caption mt-3 max-w-[64ch] text-fg-muted" lang="en">
+          {description}
+        </p>
+      )}
 
       <ol className="no-scrollbar mt-4 max-h-[60vh] divide-y divide-hairline overflow-y-auto" aria-live="off">
-        {rows.length === 0 && <li className="t-callout py-3 text-fg-muted">Nothing yet.</li>}
+        {rows.length === 0 && <li className="t-callout py-3 text-fg-muted">{t(lang, "nothingYet")}</li>}
         {rows.map((o) => (
-          <EventRow key={o.seq} overlay={o} open={open === o.seq} onToggle={() => setOpen(open === o.seq ? null : o.seq)} />
+          <EventRow key={o.seq} overlay={o} lang={lang} open={open === o.seq} onToggle={() => setOpen(open === o.seq ? null : o.seq)} />
         ))}
       </ol>
     </div>
@@ -75,10 +80,10 @@ function FilterChip({ active, onClick, label, count }: { active: boolean; onClic
   );
 }
 
-function EventRow({ overlay, open, onToggle }: { overlay: Overlay; open: boolean; onToggle: () => void }) {
+function EventRow({ overlay, lang, open, onToggle }: { overlay: Overlay; lang: Language; open: boolean; onToggle: () => void }) {
   const [copied, setCopied] = useState(false);
   const json = JSON.stringify(overlay, null, 2);
-  const summary = summarize(overlay);
+  const summary = summarize(overlay, lang);
   const copy = async () => {
     try {
       await navigator.clipboard.writeText(json);
@@ -105,7 +110,7 @@ function EventRow({ overlay, open, onToggle }: { overlay: Overlay; open: boolean
         <div className="relative mb-2">
           <pre className="t-micro max-h-80 overflow-auto rounded-control bg-fg/4 p-3 font-mono leading-relaxed text-fg-muted">{json}</pre>
           <Button size="small" className="absolute top-2 right-2" onClick={copy}>
-            {copied ? "Copied" : "Copy JSON"}
+            {copied ? t(lang, "copied") : t(lang, "copyJson")}
           </Button>
         </div>
       )}
@@ -113,8 +118,8 @@ function EventRow({ overlay, open, onToggle }: { overlay: Overlay; open: boolean
   );
 }
 
-/** One line about an event, from its own fields. */
-function summarize(o: Overlay): string {
+/** One line about an event, from its own fields; contract words (kind, trigger, type) stay as sent. */
+function summarize(o: Overlay, lang: Language): string {
   switch (o.type) {
     case "cut":
       return `${o.data.kind} · ${o.data.match_id} · ${o.data.trigger} · ${o.data.value.toFixed(2)}`;
@@ -123,16 +128,16 @@ function summarize(o: Overlay): string {
     case "action":
       return `${o.data.type} · ${o.data.player ?? "—"} · ${o.data.match_id}`;
     case "scoreboard":
-      return `${o.data.matches.length} matches · on air ${o.data.matches.find((m) => m.on_air)?.match_id ?? "—"}`;
+      return t(lang, "sumMatches", { n: o.data.matches.length, m: o.data.matches.find((m) => m.on_air)?.match_id ?? "—" });
     case "table":
-      return `${o.data.rows.length} rows · 1st ${o.data.rows[0]?.short ?? "—"}`;
+      return t(lang, "sumTable", { n: o.data.rows.length, s: o.data.rows[0]?.short ?? "—" });
     case "fantasy":
-      return `${o.data.total} points · ${o.data.players.length} players`;
+      return t(lang, "sumFantasy", { n: o.data.total, p: o.data.players.length });
     case "focus":
-      return o.data.match_id ? `locked to ${o.data.match_id}` : "released";
+      return o.data.match_id ? t(lang, "sumLocked", { m: o.data.match_id }) : t(lang, "sumReleased");
     case "players":
-      return `${o.data.players.length} on the pitch · ${o.data.match_id}`;
+      return t(lang, "sumOnPitch", { n: o.data.players.length, m: o.data.match_id });
     case "end":
-      return "full time everywhere";
+      return t(lang, "sumFullTime");
   }
 }

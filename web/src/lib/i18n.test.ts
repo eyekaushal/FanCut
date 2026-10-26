@@ -9,9 +9,10 @@ describe("t", () => {
     expect(t("hinglish", "yourClub")).toBe("Aapka club");
   });
 
-  it("fills slots", () => {
+  it("fills slots, every occurrence", () => {
     expect(t("en", "minute", { n: 24 })).toBe("24′");
     expect(t("hi", "position", { n: "2रा" })).toBe("तालिका में 2रा");
+    expect(t("en", "measuring", { n: 6, done: 3 })).toBe("Measuring the Director on 6 matchdays… 3/6");
   });
 
   it("has every language for every stakes label", () => {

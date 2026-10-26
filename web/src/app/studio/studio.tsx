@@ -13,6 +13,7 @@ import { Segmented } from "@/components/ui/segmented";
 import { ResponsibleAi, TrustMetrics } from "@/components/ui/trust-panel";
 import { api, type AuditTrail, type Contract, type Evaluation, type Matchday } from "@/lib/api";
 import { narrationSummary } from "@/lib/audit";
+import { fontClass, t } from "@/lib/i18n";
 import { useFanChannel } from "@/lib/use-fan-channel";
 import type { Connection } from "@/lib/use-channel";
 
@@ -26,8 +27,8 @@ const FANS = [
 /**
  * Studio and Trust: one fan's channel as a producer or an auditor sees it. The decision
  * log is the API's audit trail; the inspector is the raw overlay.v1 stream; the
- * measurements are the API's own. The studio is in English; the fan's lines keep
- * their language.
+ * measurements are the API's own. The screen follows the channel's language; names, the
+ * contract's words and the API's raw records (JSON, rejection reasons) stay as sent.
  */
 export function Studio() {
   const params = useSearchParams();
@@ -50,45 +51,48 @@ export function Studio() {
   };
 
   return (
-    <main className="mx-auto w-full max-w-[1400px] px-(--gutter) pb-16 sm:px-(--gutter-wide)">
+    <main
+      lang={lang === "hi" ? "hi" : undefined}
+      className={`mx-auto w-full max-w-[1400px] px-(--gutter) pb-16 sm:px-(--gutter-wide) ${fontClass(lang)}`}
+    >
       <header className="flex flex-wrap items-center justify-between gap-4 py-5">
         <div className="flex flex-wrap items-center gap-3">
           <Link href="/" className="t-headline">
             FanCut
           </Link>
-          <span className="t-caption text-fg-muted">Studio</span>
+          <span className="t-caption text-fg-muted">{t(lang, "studio")}</span>
           {profile && (
             <span className="t-caption text-fg-muted">
-              · {profile.name}&rsquo;s channel · {lang}
+              · {t(lang, "fansChannel", { name: profile.name })} · {lang}
             </span>
           )}
-          <ConnectionPill connection={connection} ended={state.ended} lang="en" />
+          <ConnectionPill connection={connection} ended={state.ended} lang={lang} />
         </div>
         <div className="flex flex-wrap items-center gap-3">
-          <Segmented value={FANS.some((f) => f.id === profileId) ? profileId : "arjun"} options={FANS} onChange={switchFan} label="Fan" />
+          <Segmented value={FANS.some((f) => f.id === profileId) ? profileId : "arjun"} options={FANS} onChange={switchFan} label={t(lang, "fan")} />
           <Link href={`/channel?profile=${profileId}`} className="pressable t-caption inline-flex h-9 items-center rounded-control bg-fg/8 px-4 font-semibold text-fg">
-            Open the channel
+            {t(lang, "openChannel")}
           </Link>
         </div>
       </header>
 
       {error && (
         <Panel className="mb-6">
-          <p className="t-body">Could not reach the API at the configured address.</p>
+          <p className="t-body">{t(lang, "apiUnreachable")}</p>
           <p className="t-caption mt-1 text-fg-muted">{error}</p>
         </Panel>
       )}
 
       <div className="space-y-5">
-        <TrustMetrics evaluation={evaluation} />
+        <TrustMetrics evaluation={evaluation} lang={lang} />
 
         <div className="grid gap-5 xl:grid-cols-[minmax(0,3fr)_minmax(360px,2fr)]">
           <Panel
-            title="Decision log"
+            title={t(lang, "decisionLog")}
             aside={
               audit ? (
                 <>
-                  {audit.decisions.length} decisions · {summary?.model ?? 0} by the Narrator ·{" "}
+                  {t(lang, "decisionsAside", { n: audit.decisions.length, m: summary?.model ?? 0 })} ·{" "}
                   <a href={api.auditUrl(audit.channel_id)} target="_blank" rel="noreferrer" className="text-fg underline-offset-2 hover:underline">
                     audit.v1 JSON
                   </a>
@@ -99,12 +103,12 @@ export function Studio() {
             <DecisionLog entries={audit?.decisions ?? []} names={names} lang={lang} />
           </Panel>
 
-          <Panel title="Overlay inspector" aside={`overlay.v1 · ${log.length} events kept`} className="xl:sticky xl:top-5 xl:self-start">
-            <OverlayInspector log={log} contract={contract} />
+          <Panel title={t(lang, "overlayInspector")} aside={t(lang, "eventsKept", { n: log.length })} className="xl:sticky xl:top-5 xl:self-start">
+            <OverlayInspector log={log} contract={contract} lang={lang} />
           </Panel>
         </div>
 
-        <ResponsibleAi evaluation={evaluation} />
+        <ResponsibleAi evaluation={evaluation} lang={lang} />
       </div>
     </main>
   );
